@@ -66,29 +66,41 @@ const DESKTOP_QUERY = '(min-width: 64rem)';
 const OPAQUE_AFTER_PX = 24;
 
 /**
- * The lockup: the Android launcher's play triangle plus the wordmark.
- * Exported because the footer signs off with the same mark.
+ * The lockup: a photo of CiCi herself, the Android launcher's play triangle,
+ * then the wordmark.
+ *
+ * The avatar is a 96px crop of the cat, not the full 1920px photo — it renders
+ * at 32/36px on every page in the app, so shipping the original would have cost
+ * 185KB on first paint for something the size of a favicon. The play glyph
+ * overlaps its lower-right corner rather than sitting beside it: two separate
+ * marks in a row read as two logos, one overlapping pair reads as one.
  */
 export function BrandMark() {
   return (
     <span className="flex items-center gap-2.5">
-      <span className="grid size-9 place-items-center rounded-card bg-accent-ink ring-1 ring-accent/40 transition-[transform,background-color,box-shadow] duration-300 ease-out-back group-hover:-translate-y-0.5 group-hover:bg-accent/20 group-hover:shadow-[0_0_0_1px_var(--color-accent)]">
-        <svg
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
+      <span className="relative shrink-0">
+        <img
+          src="/logo-cat.jpg"
+          alt="CiCi"
+          width={36}
+          height={36}
+          decoding="async"
+          className="size-9 rounded-pill object-cover ring-1 ring-outline/80 transition-[transform,box-shadow] duration-300 ease-out-back group-hover:-translate-y-0.5 group-hover:ring-accent/60"
+        />
+        <span
           aria-hidden="true"
-          focusable="false"
-          className="translate-x-px text-accent"
+          className="absolute -bottom-0.5 -right-0.5 grid size-4 place-items-center rounded-pill bg-accent ring-2 ring-ink transition-transform duration-300 ease-out-back group-hover:-translate-y-0.5"
         >
-          <path
-            d="M7 4.8 19.6 12 7 19.2Z"
-            fill="currentColor"
-            stroke="currentColor"
-            strokeWidth="2.6"
-            strokeLinejoin="round"
-          />
-        </svg>
+          <svg viewBox="0 0 24 24" width="9" height="9" focusable="false" className="translate-x-px text-white">
+            <path
+              d="M7 4.8 19.6 12 7 19.2Z"
+              fill="currentColor"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
       </span>
       <span className="flex items-baseline gap-1.5">
         <span className="text-xl font-black tracking-[-0.045em] text-text-high">CiCi</span>

@@ -13,18 +13,6 @@ interface HeroSpotlightProps {
 const SLIDE_COUNT = 5;
 const ROTATE_MS = 7000;
 
-/**
- * The same personal photo the Android app uses (`drawable-nodpi/home_backdrop`),
- * where it is the backdrop until the viewer actually lands on a title.
- *
- * Here it is the permanent base layer under the stills: it is a local file, so
- * it paints on the very first frame with no CDN round-trip, and the movie art
- * cross-fades in over it. That makes it what the page opens on — and it also
- * covers the gap whenever a still is slow, missing or broken upstream, which
- * otherwise flashes a flat grey box behind the title.
- */
-const BASE_BACKDROP = '/home-backdrop.jpg';
-
 /** One box for the hero and for its skeleton, so nothing shifts as art arrives. */
 const HERO_BOX = 'relative isolate h-[62vh] min-h-[420px] max-h-[760px] w-full overflow-visible';
 
@@ -92,14 +80,7 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
     return (
       <div className={HERO_BOX} aria-hidden="true">
         <div className={ART_BOX}>
-          <img
-            src={BASE_BACKDROP}
-            alt=""
-            className="absolute inset-0 size-full object-cover object-[center_28%]"
-            loading="eager"
-            fetchPriority="high"
-            decoding="async"
-          />
+          <div className="absolute inset-0 bg-surface-1" />
           <div className="absolute inset-0 scrim-bottom" />
         </div>
         <div className="gutter relative flex h-full max-w-3xl flex-col justify-end gap-4 pb-10 sm:pb-14">
@@ -131,23 +112,9 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
      */
     <section aria-label="Phim nổi bật" className={HERO_BOX}>
       <div className={ART_BOX} aria-hidden="true">
-        {/*
-          Base layer — see BASE_BACKDROP. It is also the FIRST slide's own art:
-          no still is drawn over position 0, so the page opens on the photo with
-          the featured title over it, exactly as the TV app opens before focus
-          lands on any card. It then stays underneath every later slide, which
-          is what keeps a slow or broken still from flashing a grey box.
-        */}
-        <img
-          src={BASE_BACKDROP}
-          alt=""
-          className="absolute inset-0 size-full object-cover object-[center_28%]"
-          loading="eager"
-          fetchPriority="high"
-          decoding="async"
-        />
+        {/* The ink underneath is what a slow or broken still falls back to. */}
         {slides.map((slide, position) =>
-          position > 0 && mounted.has(position) ? (
+          mounted.has(position) ? (
             <img
               key={slide.slug}
               src={landscapeOf(slide)}
@@ -155,7 +122,8 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
               className={`absolute inset-0 size-full object-cover object-[center_28%] transition-opacity duration-1000 ease-out-expo ${
                 position === safeIndex ? 'opacity-100' : 'opacity-0'
               }`}
-              loading="lazy"
+              loading={position === 0 ? 'eager' : 'lazy'}
+              fetchPriority={position === 0 ? 'high' : 'auto'}
               decoding="async"
             />
           ) : null,
