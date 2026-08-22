@@ -1,153 +1,86 @@
-# Bàn giao — trạng thái dự án tính tới 2026-08-21
+# Bàn giao — sẵn sàng phát hành
 
-> File tạm để nối lại công việc ở phiên sau. Xoá đi khi đã xong.
+> File tạm. Xoá đi khi đã deploy xong và không cần nữa.
 
-## Tóm tắt
-
-Website xem phim `CiCi TV`, port từ app Android TV [`td-tv`](https://github.com/thangg123/td-tv).
-Dựng từ repo trống trong một phiên. **Build xanh, chưa commit lần nào, chưa chạy thử trên
-trình duyệt thật.**
+## Deploy
 
 ```bash
-npm install && npm run build   # tsc --noEmit && vite build  → cả hai exit 0
-npm run dev                    # http://localhost:5173
+npm install
+npm run build          # tsc --noEmit && vite build → dist/
+npx vercel --prod      # cần: npm i -g vercel, rồi vercel login
 ```
 
-## Đã xong
+`vercel.json` đã cấu hình sẵn: framework `vite`, output `dist`, SPA rewrite về
+`index.html`, cache 1 năm cho `/assets/*` (file có hash nên an toàn), và
+`X-Robots-Tag: noindex` vì đây là trang cá nhân.
 
-| Tầng | Trạng thái |
+Không có biến môi trường. Không có backend. Không có khoá API.
+
+## Đã kiểm chứng trên bản production build
+
+Không chỉ dev server — các số dưới đây đo trên `dist/` chạy qua `vite preview`.
+
+| Hạng mục | Kết quả |
 |---|---|
-| Config — `vite.config.ts`, `tsconfig.json`, `vercel.json`, `index.html` | ✅ |
-| `src/lib/**` — domain, api, mappers, repository, queries, storage, routes, format | ✅ port 1:1 từ Kotlin |
-| `src/styles/theme.css` — design system Midnight Cinema | ✅ |
-| `src/components/**` — 23 component (ui / layout / movie / player) | ✅ |
-| `src/pages/**` — 8 trang | ✅ |
-| `README.md` | ✅ |
+| Tràn ngang | **0/40** tổ hợp (5 khổ máy × 8 route) |
+| Vùng chạm < 44px | **0** thật sự (vài cái bị đếm nhầm đều là `sr-only`) |
+| Cỡ chữ nhỏ nhất | **12px** mọi route, mọi khổ |
+| Lỗi / cảnh báo console | **0** |
+| Phát HLS | `readyState 4` · 1920×1080 · qua MSE · `hls.js` chỉ tải khi vào `/xem` |
+| Banner trang chi tiết | 288px (35% màn hình), nút "Xem ngay" trên nếp gấp kể cả máy 375×667 |
+| Dung sai tai thỏ | Bơm 44px inset mỗi bên → gutter nở 60px, **không tràn**, thẻ phim còn 255px |
+| Desktop 1440 | Không regression: 12 mục menu, lưới thể loại đều, hero tự chuyển |
 
-Đã qua 1 vòng review (2 góc: correctness + design) → 16 findings → 1 vòng sửa (4 agent,
-66 thay đổi) → build lại xanh.
+### Bundle
 
-### Số liệu build gần nhất
+Tải lần đầu ≈ **100 KB gzip JS + 13 KB CSS**. `dist/index.html` chỉ tham chiếu
+5 chunk — `hls.js` (179 KB gzip) **không** nằm trong đó, đã kiểm bằng
+`performance.getEntriesByType('resource')` chứ không tin comment trong code.
 
-Tải lần đầu ≈ **104 KB gzip JS + 13 KB CSS**:
+## Chưa kiểm được — hãy thử sau khi deploy
 
-| Chunk | Raw | Gzip | Ghi chú |
-|---|---|---|---|
-| `index.js` (entry + HomePage) | 47 KB | 14.4 KB | |
-| `vendor.js` | 267 KB | 84.2 KB | React + Router + Query |
-| `index.css` | 79 KB | 13.1 KB | toàn bộ Tailwind đã tree-shake |
-| `hls.js` | 574 KB | 178.9 KB | **ngoài entry** — chỉ tải khi vào `/xem/:slug` |
-| trang lazy | 1–22 KB | 0.3–7.3 KB | mỗi route một chunk |
-
-## Đã smoke test trên trình duyệt thật ✅
-
-Chạy Playwright qua cả 8 trang ở 1440px và 320px. **0 lỗi, 0 cảnh báo console.**
-
-| Kiểm | Kết quả |
-|---|---|
-| Trang chủ | 6 hàng + hero, 144 thẻ, **0 ảnh hỏng**, đúng 1 ảnh `fetchPriority=high`, thứ tự heading h1→h2→h3 đúng |
-| Chi tiết | Render đủ; **"16 tập"** hiện đúng — xác nhận fix `episode_total` chạy thật |
-| **Xem phim** | HLS phát được: `readyState 4`, 1920×1080, 21:24, buffer 150s, qua MSE |
-| Lưu tiến độ | Ghi đúng slug/tập/server, vị trí 305s / tổng 1284s |
-| Resume | Tải lại đúng tập → nhảy về vị trí cũ; sang **tập khác thì KHÔNG resume** (đúng như bản Kotlin) |
-| Catalog + lọc URL | `?the-loai=hanh-dong&nam=2026&sap-xep=newest` → chip khớp, "Xóa lọc (2)", 66 phim |
-| Tìm kiếm / Thư viện / Thể loại / 404 | Đều đúng; thư viện nhận được tiến độ vừa xem từ player |
-| 320px | Không trang nào tràn ngang; nav thu về hamburger; mũi tên rail biến mất |
-| Guard cảm ứng | `.reveal-on-hover` và `.rail-arrow` đã vào CSS production đúng cú pháp |
-
-### Lỗi trình duyệt phát hiện được (và chỉ trình duyệt mới phát hiện được)
-
-**Xem phim hỏng trên Chrome / Edge / Firefox** — tức gần như mọi trình duyệt. Chromium trả
-`canPlayType('application/vnd.apple.mpegurl')` = `"maybe"` (truthy) nhưng **không hề phát được
-HLS trên desktop**. Player tin câu trả lời đó, đi nhánh native, gán `video.src` rồi chết →
-màn hình "Không phát được tập này".
-
-Đây là lỗi do **spec tôi viết sai** ("native HLS first"), agent làm đúng theo. Đã đảo lại thứ
-tự cho khớp khuyến nghị của chính hls.js: **dùng MSE/hls.js ở mọi nơi có `MediaSource`**, chỉ
-rơi về decoder của thẻ `<video>` khi hls.js không chạy được — thực tế là Safari/iOS, nơi HLS
-native hoạt động thật và còn được tăng tốc phần cứng.
-
-`tsc` và `vite build` đều **không thể** bắt lỗi này.
-
-## Kết quả audit đối kháng (đã xong)
-
-Một agent đọc lại từng file để chứng minh 16 fix có thật sự vào code — **không tin báo cáo
-"đã sửa"**. Kết quả: **13 landed, 3 partial, 5 regression** do chính vòng sửa tạo ra.
-
-### Đã xử lý trong phiên này
-
-| | Việc | Trạng thái |
-|---|---|---|
-| R1 | **Vòng lặp import** `MovieRail` ↔ `Skeleton` do F10 tạo ra. Chưa nổ chỉ vì cả hai binding đều đọc trong render; sẽ thành `Cannot access before initialization` ngay khi dùng ở top level hoặc route-split `MovieRail` | ✅ đã tách sang `src/components/movie/layout.ts` (leaf module, không import gì) |
-| R4 | Mũi tên cuộn rail thành **vĩnh viễn không bấm được trên tablet cảm ứng** (md+ nhưng không có hover) | ✅ thêm class `.rail-arrow` chỉ render khi `(hover:hover) and (pointer:fine)`, và `focus-visible:pointer-events-auto` cho bàn phím |
-
-Ngoài ra đã xử lý nốt: **F7** (chỉ còn 1 ảnh `fetchPriority=high` trên trang chi tiết),
-**F16** (không còn `text-text-low` nào trên nền `bg-surface-*`), **R2** (`HomePage` hạ thẻ
-ngôn ngữ xuống `text-section` để không đụng tier của `<h1>`), **R3** (`fallbackFocusRef` chuyển
-sang node gốc của trang, luôn tồn tại kể cả khi xoá mục xem-tiếp cuối cùng), **R5**
-(`ConfirmDialog` dùng `stopImmediatePropagation`).
-
-## Còn phải làm
-
-1. **Commit** — repo chưa có commit nào. `git add -A && git commit`.
-2. **Deploy** — `npx vercel --prod` (cần `npm i -g vercel` và login).
-3. **Quyết định còn treo (F11)** — 3 chỗ vẫn dùng utility `text-eyebrow` thô:
-   `Header.tsx:83` ("TV" trong wordmark), `EmbedPlayer.tsx:77` (badge trình phát dự phòng),
-   `TaxonomyIndexPage.tsx:288` (slug trong tile). Audit đòi đổi hết sang `.eyebrow`, nhưng
-   **cả ba đều không phải nhãn section** — ép vào là sai trừu tượng. Đã cố ý để nguyên.
-4. **Chưa test Safari/iOS** — đó là nhánh HLS native duy nhất còn lại chưa chạy thật.
-   Playwright ở đây là Chromium, đi nhánh MSE.
-5. **Xoá `HANDOFF.md`** khi không cần nữa.
+1. **Safari / iOS.** Đây là nhánh HLS native duy nhất chưa chạy thật; Playwright
+   ở máy này là Chromium nên luôn đi nhánh MSE. Mở `/xem/:slug` trên iPhone và
+   kiểm: video phát được, nút toàn màn hình có tác dụng (iOS chỉ hỗ trợ
+   `video.webkitEnterFullscreen()`, đã xử lý riêng), lưu tiến độ khi thoát app.
+2. **Tai thỏ thật.** Chrome desktop luôn trả `env(safe-area-inset-*)` = 0. Đã
+   chứng minh layout chịu được inset 44px giả lập, nhưng hành vi thật cần máy thật.
 
 ## Bẫy đã gặp — đừng lặp lại
 
-**`episode_total` là number, không phải string.** API trả `"episode_total": 104`. Bản Kotlin
-không dính vì `kotlinx.serialization` chạy `isLenient = true` nên tự ép kiểu; `JSON.parse` thì
-không. Lỗi này làm `.trim()` throw và **sập toàn bộ trang chi tiết + trang xem**. Đã sửa tận
-gốc: `str()` trong `src/lib/api/mappers.ts` giờ nhận `unknown` và ép kiểu an toàn, nên mọi
-lệch kiểu về sau chỉ là chuyện thẩm mỹ chứ không phải màn hình trắng.
+**`canPlayType('application/vnd.apple.mpegurl')` trả `"maybe"` trên Chromium**
+dù nó **không** phát được HLS trên desktop. Tin câu trả lời đó là Chrome/Edge/
+Firefox chết trắng trang xem. Thứ tự đúng, đã áp dụng: dùng MSE/hls.js ở mọi nơi
+có `MediaSource`, chỉ rơi về decoder của thẻ `<video>` khi hls.js không chạy được
+— thực tế là Safari/iOS.
 
-Đã quét toàn bộ ~90 trường của 5 endpoint trên 117 phim thật để xác nhận đây là vi phạm duy
-nhất. Các trường số (`year`, `vote_average`, `tmdb_people_id`, `pagination.*`) đều đã đi qua
-`num()` từ đầu nên không sao.
+**`episode_total` API trả về number** dù tài liệu ghi string. Bản Kotlin không
+dính vì `isLenient = true`; `JSON.parse` thì không. Đã sửa tận gốc: `str()` trong
+`lib/api/mappers.ts` nhận `unknown` và ép kiểu an toàn.
 
-**Vite 8 dùng Rolldown, không phải Rollup.** `output.manualChunks` dạng object đã bị bỏ; phải
-dùng `output.codeSplitting.groups`. Và không có `@types/node` trong dự án nên `vite.config.ts`
-không import được `node:url`.
+**Vite 8 dùng Rolldown, không phải Rollup.** `output.manualChunks` dạng object đã
+bị bỏ; dùng `output.codeSplitting.groups`.
 
-## Quyết định thiết kế đã chốt (đừng đảo ngược khi sửa tiếp)
+## Quy ước thiết kế — đừng đảo ngược khi sửa tiếp
 
-| | Quy ước |
+| | |
 |---|---|
-| **D1** | Nhãn eyebrow dùng class `.eyebrow` / `.eyebrow-muted` trong `theme.css` — không viết tay `text-eyebrow uppercase ...` nữa |
-| **D2** | Một weight cho một tier: `text-display`/`text-hero`/`text-screen` → `font-black`; `text-section` → `font-semibold`. `<h1>` và `<h2>` không bao giờ cùng tier trên một màn hình |
-| **D3** | Trạng thái "đã lưu" luôn là `text-mint`, không bao giờ `text-accent` |
-| **D4** | Nút xoá lọc luôn `variant="secondary"`, nhãn `Xóa lọc ({n})`. `variant="primary"` trong empty state dành cho hành động tiến tới, không phải reset |
-| **D5** | Chỉ 3 bán kính: `rounded-cell` (control dày đặc) · `rounded-card` (mặt phẳng/ảnh/panel) · `rounded-pill` (nút/chip) |
-| **D6** | `text-text-low` chỉ đọc được trên nền `bg-ink`. Nằm trên `bg-surface-*` thì phải đổi sang `text-text-mid` (WCAG AA) |
-| **D7** | Control hiện-khi-hover phải dùng `.reveal-on-hover` — `opacity-0` thuần vẫn ăn click, trên điện thoại sẽ nuốt cú chạm dành cho thẻ phim bên dưới |
+| **D1** | Nhãn eyebrow dùng class `.eyebrow` / `.eyebrow-muted`, không viết tay |
+| **D2** | Một weight một tier: display/hero/screen → `font-black`; section → `font-semibold` |
+| **D3** | Trạng thái "đã lưu" luôn `text-mint` |
+| **D4** | Nút xoá lọc luôn `variant="secondary"`, nhãn `Xóa lọc ({n})` |
+| **D5** | Ba bán kính: `rounded-cell` · `rounded-card` · `rounded-pill` |
+| **D6** | `text-text-low` chỉ trên `bg-ink`; trên `bg-surface-*` phải là `text-text-mid` |
+| **D7** | Control hiện-khi-hover phải dùng `.reveal-on-hover` — `opacity-0` thuần vẫn ăn click, trên điện thoại sẽ nuốt cú chạm |
+| **Mobile** | Vùng chạm 44px tới `xl`, mật độ desktop từ `xl` lên (`size-11 xl:size-9`) |
+| **Safe-area** | Dùng `.gutter` (đã cộng inset), `.safe-top`, `.safe-bottom`, `.safe-end`. Utility `px-gutter` **không** có inset |
 
-Nguyên tắc gốc: accent `#FF3B5C` **chỉ** dành cho focus và hành động chính; gold `#FFC64B`
-**chỉ** dành cho điểm đánh giá. Sức mạnh của bảng màu nằm ở sự khan hiếm đó.
+Accent `#FF3B5C` chỉ cho focus và hành động chính; gold `#FFC64B` chỉ cho điểm
+đánh giá. Sức mạnh của bảng màu nằm ở sự khan hiếm đó.
 
 ## Ràng buộc kỹ thuật
 
-- TS strict + `verbatimModuleSyntax` (phải `import type`) + `noUncheckedIndexedAccess`
-  (`arr[0]` là `T | undefined`) + `noUnusedLocals`/`noUnusedParameters`.
-- Không `any`, không cast, không `@ts-ignore`, không nới `tsconfig`.
-- Import qua alias `@/`, không dùng `../../`.
-- Chỉ transition `transform`/`opacity`/`box-shadow`/màu/`filter`.
-- Không thêm dependency mới. Hiện có đúng: react, react-dom, react-router-dom,
-  @tanstack/react-query, hls.js.
-
-## Workflow đã chạy (có thể resume)
-
-Script nằm ở `~/.claude/projects/-Users-thangdang-Documents-GitHub-td-tv-web/08b4fc64-53ca-4f38-b457-46368d804232/workflows/scripts/`:
-
-| Run ID | Việc | Kết quả |
-|---|---|---|
-| `wf_156d586e-661` | Dựng UI: 4 nhóm component → 7 trang → build + 2 review | 14/14 agent, build xanh, 16 findings |
-| `wf_1c1fdd6d-2da` | Sửa 17 findings: 4 agent file rời nhau → build → audit | 4 agent sửa xong (66 fix), build xanh, audit chưa xong |
-
-Journal đầy đủ (mỗi agent một dòng `{"type":"result",...}`):
-`~/.claude/projects/-Users-thangdang-Documents-GitHub-td-tv/08b4fc64-53ca-4f38-b457-46368d804232/subagents/workflows/<run-id>/journal.jsonl`
+TS strict + `verbatimModuleSyntax` (phải `import type`) + `noUncheckedIndexedAccess`
++ `noUnusedLocals`/`noUnusedParameters`. Không `any`, không cast, không `@ts-ignore`.
+Import qua alias `@/`. Chỉ transition `transform`/`opacity`/`box-shadow`/màu/`filter`.
+Dependency đúng 5: react, react-dom, react-router-dom, @tanstack/react-query, hls.js.

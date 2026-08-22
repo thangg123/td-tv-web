@@ -294,7 +294,7 @@ function NavDropdown({ label, kind, indexHref }: { label: string; kind: Taxonomy
   return (
     <div
       ref={wrapRef}
-      className="relative flex h-full items-center"
+      className="relative flex h-full shrink-0 items-center"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
       }}
@@ -305,7 +305,7 @@ function NavDropdown({ label, kind, indexHref }: { label: string; kind: Taxonomy
         aria-haspopup="true"
         aria-expanded={open}
         onClick={toggle}
-        className="group relative flex h-full shrink-0 items-center gap-1 whitespace-nowrap px-1.5 text-sm font-medium xl:px-2 2xl:px-2.5"
+        className="group relative flex h-full shrink-0 items-center gap-1 whitespace-nowrap px-1.5 text-sm font-medium xl:px-1.5 2xl:px-2.5"
       >
         <span
           className={`transition-colors duration-200 ${
@@ -350,7 +350,7 @@ function DesktopNavItem({ to, label, end }: NavItem) {
     <NavLink
       to={to}
       end={end}
-      className="group relative flex h-full shrink-0 items-center whitespace-nowrap px-1.5 text-sm font-medium xl:px-2 2xl:px-2.5"
+      className="group relative flex h-full shrink-0 items-center whitespace-nowrap px-1.5 text-sm font-medium xl:px-1.5 2xl:px-2.5"
     >
       {({ isActive }) => (
         <>
@@ -502,7 +502,7 @@ export default function Header() {
             {NAV_GROUPS.map((group, index) => (
               <Fragment key={group.label}>
                 {index > 0 && (
-                  <span aria-hidden="true" className="mx-2 h-4 w-px bg-outline xl:mx-3" />
+                  <span aria-hidden="true" className="mx-1.5 h-4 w-px bg-outline xl:mx-2 2xl:mx-3" />
                 )}
                 {group.items.map((item) =>
                   item.menu ? (
