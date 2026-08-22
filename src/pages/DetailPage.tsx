@@ -423,6 +423,30 @@ export default function DetailPage() {
         </nav>
       ) : null}
 
+      {/*
+        Episodes come before the synopsis on purpose. Someone opening a title
+        they already watch is here to press a number, not to read the plot
+        again — burying the grid under three paragraphs and a cast rail made the
+        one action they came for the last thing on the page.
+      */}
+      {showPicker ? (
+        <section aria-labelledby="tap-phim" className="gutter mt-row-gap">
+          <h2 id="tap-phim" className="text-section font-semibold text-text-high">
+            {series ? 'Tập phim' : 'Nguồn phát'}
+          </h2>
+          <div className="mt-5 w-fit min-w-[min(100%,20rem)] max-w-full rounded-card border border-outline/60 bg-surface-1/60 p-4 sm:p-6">
+            <EpisodePicker
+              servers={servers}
+              serverIndex={serverIndex}
+              episodeIndex={resumeEpisodeIndex}
+              onSelectServer={(index) => setPicked({ slug, index })}
+              onSelectEpisode={handleSelectEpisode}
+              variant="page"
+            />
+          </div>
+        </section>
+      ) : null}
+
       <section
         aria-labelledby="noi-dung-phim"
         className="gutter mt-row-gap lg:flex lg:items-start lg:gap-14"
@@ -488,23 +512,6 @@ export default function DetailPage() {
         </section>
       ) : null}
 
-      {showPicker ? (
-        <section aria-labelledby="tap-phim" className="gutter mt-row-gap">
-          <h2 id="tap-phim" className="text-section font-semibold text-text-high">
-            {series ? 'Tập phim' : 'Nguồn phát'}
-          </h2>
-          <div className="mt-5 rounded-card border border-outline/60 bg-surface-1/60 p-4 sm:p-6">
-            <EpisodePicker
-              servers={servers}
-              serverIndex={serverIndex}
-              episodeIndex={resumeEpisodeIndex}
-              onSelectServer={(index) => setPicked({ slug, index })}
-              onSelectEpisode={handleSelectEpisode}
-              variant="page"
-            />
-          </div>
-        </section>
-      ) : null}
     </article>
   );
 }

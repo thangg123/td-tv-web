@@ -117,13 +117,18 @@ export default function EpisodePicker({
           </div>
         )}
 
+        {/*
+          Flex-wrap, not `grid auto-fill`. `auto-fill` keeps generating empty
+          tracks to the edge of the container and `1fr` stretches every one of
+          them, so a five-episode film laid five narrow buttons along the left
+          and left the rest of a 1300px card blank. Wrapping fixed-width cells
+          packs them from the left and simply stops.
+        */}
         <div
           ref={gridRef}
-          className={`relative mt-3 grid gap-2 overflow-y-auto pr-1 ${
-            isDense
-              ? 'grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))]'
-              : 'grid-cols-[repeat(auto-fill,minmax(8rem,1fr))]'
-          } ${isPanel ? 'max-h-[min(52vh,24rem)]' : 'max-h-[32rem]'}`}
+          className={`relative mt-3 flex flex-wrap gap-2 overflow-y-auto pr-1 ${
+            isPanel ? 'max-h-[min(52vh,24rem)]' : 'max-h-[32rem]'
+          }`}
         >
           {episodes.map((episode, index) => {
             const isActive = index === episodeIndex;
@@ -138,9 +143,9 @@ export default function EpisodePicker({
                 disabled={!playable}
                 aria-current={isActive ? 'true' : undefined}
                 onClick={() => onSelectEpisode(index)}
-                className={`flex items-center justify-center rounded-cell border px-1.5 font-medium tabular-nums transition disabled:pointer-events-none disabled:opacity-35 ${
-                  isPanel ? 'h-10 text-xs' : 'h-11 text-sm'
-                } ${
+                className={`flex shrink-0 items-center justify-center rounded-cell border px-1.5 font-medium tabular-nums transition disabled:pointer-events-none disabled:opacity-35 ${
+                  isDense ? 'w-13' : 'min-w-32 max-w-52 px-3'
+                } ${isPanel ? 'h-10 text-xs' : 'h-11 text-sm'} ${
                   isActive
                     ? 'border-accent bg-accent text-white shadow-glow'
                     : 'border-outline bg-surface-2 text-text-mid hover:-translate-y-0.5 hover:border-accent/50 hover:bg-surface-3 hover:text-text-high active:translate-y-0 active:scale-95'

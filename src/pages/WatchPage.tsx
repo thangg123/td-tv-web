@@ -419,7 +419,7 @@ export default function WatchPage() {
           {factLine.length > 0 && <p className="mt-3.5 text-sm text-text-mid">{factLine}</p>}
 
           {showPicker && (
-            <div className="mt-7 rounded-card border border-outline/60 bg-surface-1/60 p-4 sm:p-5">
+            <div className="mt-7 w-fit min-w-[min(100%,20rem)] max-w-full rounded-card border border-outline/60 bg-surface-1/60 p-4 sm:p-5">
               <div className="flex items-baseline justify-between gap-3">
                 <h2 className="text-section font-semibold text-text-high">Danh sách tập</h2>
                 <span className="text-sm text-text-mid tabular-nums">
