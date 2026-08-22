@@ -52,7 +52,13 @@ export default function EpisodePicker({
   const safeServerIndex = servers[serverIndex] ? serverIndex : 0;
   const episodes = servers[safeServerIndex]?.episodes ?? [];
 
-  /* Long names cannot live in a 3rem cell, so the whole grid widens for them. */
+  /*
+   * Long names cannot live in a 3rem cell, so the whole grid widens for them.
+   * Either way EVERY cell is the same fixed width — sizing them to their own
+   * text made "Full" a stub beside "Tập 12 - Thuyết minh" and the row read as
+   * broken rather than as a set. Overlong names truncate; `title` keeps them
+   * readable.
+   */
   const isDense = useMemo(
     () => episodes.every((episode) => shortLabel(episode.name).length <= 4),
     [episodes],
@@ -144,7 +150,7 @@ export default function EpisodePicker({
                 aria-current={isActive ? 'true' : undefined}
                 onClick={() => onSelectEpisode(index)}
                 className={`flex shrink-0 items-center justify-center rounded-cell border px-1.5 font-medium tabular-nums transition disabled:pointer-events-none disabled:opacity-35 ${
-                  isDense ? 'w-13' : 'min-w-32 max-w-52 px-3'
+                  isDense ? 'w-13' : 'w-36 px-3'
                 } ${isPanel ? 'h-10 text-xs' : 'h-11 text-sm'} ${
                   isActive
                     ? 'border-accent bg-accent text-white shadow-glow'

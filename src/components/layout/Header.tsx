@@ -1,15 +1,25 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { FormEvent, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/Icon';
 import { MovieLists, languageOptions } from '@/lib/domain/catalog';
+import { useCategories, useCountries, useYears } from '@/lib/queries/queries';
 import { routes } from '@/lib/routes';
+
+/** Which taxonomy a submenu lists, when the item opens one instead of navigating. */
+type TaxonomyKind = 'category' | 'country' | 'year';
 
 interface NavItem {
   readonly to: string;
   readonly label: string;
   /** Exact matching, so "Trang chủ" is not lit up on every page. */
   readonly end?: boolean;
+  /**
+   * Renders a hover submenu of this taxonomy rather than a plain link. The
+   * index page stays reachable from the bottom of the panel — it is a useful
+   * destination, just not what a top-level menu entry should fire on click.
+   */
+  readonly menu?: TaxonomyKind;
 }
 
 interface NavGroup {
@@ -49,8 +59,15 @@ const NAV_GROUPS: readonly NavGroup[] = [
   {
     label: 'Khám phá',
     items: [
-      { to: routes.genres, label: 'Thể loại' },
-      { to: routes.countries, label: 'Quốc gia' },
+      { to: routes.genres, label: 'Thể loại', menu: 'category' },
+      { to: routes.countries, label: 'Quốc gia', menu: 'country' },
+      /*
+       * There is no "all years" index to fall back to, so `to` points at the
+       * genre page — the one screen that also lists years — for the drawer,
+       * and the panel itself skips the "Xem tất cả" row because it is already
+       * showing every year there is.
+       */
+      { to: routes.genres, label: 'Năm', menu: 'year' },
     ],
   },
 ];
@@ -61,6 +78,9 @@ const ICON_CONTROL =
 
 /** Tailwind's `xl`, mirrored so the drawer can dismiss itself on a rotation. */
 const DESKTOP_QUERY = '(min-width: 80rem)';
+
+/** Breathing room kept between a submenu and the edge of the window. */
+const EDGE_MARGIN_PX = 12;
 
 /** Past this many pixels the glass bar commits to a solid plate. */
 const OPAQUE_AFTER_PX = 24;
@@ -118,12 +138,212 @@ export function BrandMark() {
   );
 }
 
+/**
+ * The panel body. Split out so the taxonomy request only fires once the viewer
+ * has actually opened the menu — mounting the hook with the header would cost
+ * every cold page load two requests for a list most visits never look at.
+ */
+function TaxonomyPanel({ kind, indexHref }: { kind: TaxonomyKind; indexHref?: string }) {
+  const categories = useCategories();
+  const countries = useCountries();
+  const years = useYears();
+
+  const query = kind === 'category' ? categories : kind === 'country' ? countries : years;
+  /* Years arrive as numbers; everything else as {name, slug}. One shape from here on. */
+  const items =
+    kind === 'year'
+      ? (years.data ?? []).map((year) => ({ key: String(year), label: String(year), href: routes.year(year) }))
+      : ((kind === 'category' ? categories.data : countries.data) ?? []).map((item) => ({
+          key: item.slug,
+          label: item.name,
+          href: kind === 'category' ? routes.category(item.slug) : routes.country(item.slug),
+        }));
+
+  if (query.isPending) {
+    return <p className="px-3 py-6 text-center text-sm text-text-mid">Đang tải…</p>;
+  }
+  if (items.length === 0) {
+    return (
+      <p className="px-3 py-6 text-center text-sm text-text-mid">
+        Không tải được danh sách.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <ul
+        className={`grid max-h-[60vh] gap-x-1 gap-y-0.5 overflow-y-auto p-2 ${
+          kind === 'year' ? 'grid-cols-3 xl:grid-cols-4' : 'grid-cols-2 xl:grid-cols-3'
+        }`}
+      >
+        {items.map((item) => (
+          <li key={item.key}>
+            <NavLink
+              to={item.href}
+              className={({ isActive }) =>
+                `block truncate rounded-cell px-3 py-2 text-sm transition-colors duration-150 ${
+                  isActive
+                    ? 'bg-accent-ink text-accent'
+                    : 'text-text-mid hover:bg-surface-2 hover:text-text-high'
+                }`
+              }
+            >
+              {item.label}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+      {indexHref ? (
+      <div className="border-t border-outline/60 p-2">
+        <Link
+          to={indexHref}
+          className="block rounded-cell px-3 py-2 text-sm font-medium text-accent transition-colors duration-150 hover:bg-surface-2 hover:text-accent-soft"
+        >
+          Xem tất cả
+        </Link>
+      </div>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * A top-level entry that opens a submenu instead of navigating.
+ *
+ * Click to open, click again — or Escape, or a press anywhere outside — to
+ * close. Deliberately NOT hover: a menu that opens on hover fires on every
+ * pointer that merely crosses it on the way somewhere else, and it has no
+ * equivalent on a touch screen at all. A real button also means Enter and Space
+ * already work with no key handling of our own.
+ */
+function NavDropdown({ label, kind, indexHref }: { label: string; kind: TaxonomyKind; indexHref?: string }) {
+  const [open, setOpen] = useState(false);
+  // The panel's data hook is mounted only from here, on first open.
+  const [everOpened, setEverOpened] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  /*
+   * Anchored to the trigger's left edge by default, flipped to its right edge
+   * when that would push the panel off screen — which it does for the last
+   * entry in the bar, where a 38rem panel opening rightwards runs straight off
+   * the viewport. Measured rather than hard-coded per item, so it keeps working
+   * if the menu order changes.
+   */
+  const [alignRight, setAlignRight] = useState(false);
+
+  const toggle = useCallback(() => {
+    setOpen((wasOpen) => {
+      if (!wasOpen) setEverOpened(true);
+      return !wasOpen;
+    });
+  }, []);
+
+  // Picking an entry is the menu's whole purpose; leaving it hanging over the
+  // page the viewer just navigated to serves nothing.
+  const routeKey = useLocation().key;
+  useEffect(() => setOpen(false), [routeKey]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const measure = () => {
+      const wrap = wrapRef.current;
+      const panel = panelRef.current;
+      if (!wrap || !panel) return;
+      // Measure from the trigger, not the panel: the panel may already be
+      // flipped, and reading its own position would oscillate.
+      const wouldOverflow = wrap.getBoundingClientRect().left + panel.offsetWidth > window.innerWidth - EDGE_MARGIN_PX;
+      setAlignRight(wouldOverflow);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      // Dismissing with the keyboard has to leave focus somewhere sensible.
+      triggerRef.current?.focus();
+    };
+    // Pointerdown, not click: the menu must be gone before whatever sits under
+    // it starts navigating — including the other dropdown's trigger.
+    const onPointerDown = (event: PointerEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [open]);
+
+  return (
+    <div
+      ref={wrapRef}
+      className="relative flex h-full items-center"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+      }}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={toggle}
+        className="group relative flex h-full shrink-0 items-center gap-1 whitespace-nowrap px-1.5 text-sm font-medium xl:px-2 2xl:px-2.5"
+      >
+        <span
+          className={`transition-colors duration-200 ${
+            open ? 'text-text-high' : 'text-text-mid group-hover:text-text-high'
+          }`}
+        >
+          {label}
+        </span>
+        <Icon
+          name="chevron-down"
+          size={14}
+          className={`text-text-low transition-transform duration-200 ease-out-expo ${
+            open ? 'rotate-180' : ''
+          }`}
+        />
+        <span
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-x-2 bottom-0 h-0.5 origin-left rounded-full transition-transform duration-300 ease-out-expo ${
+            open ? 'scale-x-100 bg-accent' : 'scale-x-0 bg-accent/50 group-hover:scale-x-100'
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div
+          role="group"
+          aria-label={label}
+          ref={panelRef}
+          className={`absolute top-full z-50 w-[min(38rem,90vw)] overflow-hidden rounded-card border border-outline/70 bg-ink/95 shadow-lift backdrop-blur-xl ${
+            alignRight ? 'right-0' : 'left-0'
+          }`}
+        >
+          {everOpened ? <TaxonomyPanel kind={kind} indexHref={indexHref} /> : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DesktopNavItem({ to, label, end }: NavItem) {
   return (
     <NavLink
       to={to}
       end={end}
-      className="group relative flex h-full shrink-0 items-center whitespace-nowrap px-1.5 text-sm font-medium xl:px-2.5"
+      className="group relative flex h-full shrink-0 items-center whitespace-nowrap px-1.5 text-sm font-medium xl:px-2 2xl:px-2.5"
     >
       {({ isActive }) => (
         <>
@@ -275,9 +495,18 @@ export default function Header() {
                 {index > 0 && (
                   <span aria-hidden="true" className="mx-2 h-4 w-px bg-outline xl:mx-3" />
                 )}
-                {group.items.map((item) => (
-                  <DesktopNavItem key={item.to} to={item.to} label={item.label} end={item.end} />
-                ))}
+                {group.items.map((item) =>
+                  item.menu ? (
+                    <NavDropdown
+                      key={item.label}
+                      label={item.label}
+                      kind={item.menu}
+                      indexHref={item.menu === 'year' ? undefined : item.to}
+                    />
+                  ) : (
+                    <DesktopNavItem key={item.label} to={item.to} label={item.label} end={item.end} />
+                  ),
+                )}
               </Fragment>
             ))}
           </nav>
@@ -423,7 +652,7 @@ export default function Header() {
                     </p>
                     <ul aria-labelledby={`menu-nhom-${index}`}>
                       {group.items.map((item) => (
-                        <li key={item.to}>
+                        <li key={item.label}>
                           <NavLink
                             to={item.to}
                             end={item.end}

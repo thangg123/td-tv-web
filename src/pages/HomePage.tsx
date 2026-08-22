@@ -9,16 +9,13 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import ContinueRail from '@/components/movie/ContinueRail';
 import HeroSpotlight from '@/components/movie/HeroSpotlight';
 import MovieRail from '@/components/movie/MovieRail';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import Icon from '@/components/ui/Icon';
-import type { IconName } from '@/components/ui/Icon';
 import { ErrorState } from '@/components/ui/StateViews';
 import type { CatalogSource } from '@/lib/domain/catalog';
-import { MovieLists, languageOptions } from '@/lib/domain/catalog';
+import { MovieLists } from '@/lib/domain/catalog';
 import { useMovieRow, useMovieRows } from '@/lib/queries/queries';
 import { routes } from '@/lib/routes';
 import { removeProgress } from '@/lib/storage/userData';
@@ -36,6 +33,12 @@ interface HomeRow {
   readonly href: string;
 }
 
+/*
+ * Same order as the header, and for the same reason: someone who has learned
+ * where "Hoạt hình" sits in the bar should find its shelf in the same place on
+ * the page. Content types first, then the three audio cuts — which is also
+ * roughly least-to-most specific, so the page narrows as it scrolls.
+ */
 const HOME_ROWS: readonly HomeRow[] = [
   {
     source: NEWEST_SOURCE,
@@ -44,22 +47,16 @@ const HOME_ROWS: readonly HomeRow[] = [
     href: routes.newest,
   },
   {
-    source: { kind: 'list', slug: MovieLists.SERIES },
-    title: 'Phim bộ mới',
-    eyebrow: 'Dài tập, xem cả tuần',
-    href: routes.list(MovieLists.SERIES),
-  },
-  {
     source: { kind: 'list', slug: MovieLists.SINGLE },
-    title: 'Phim lẻ mới',
+    title: 'Phim lẻ',
     eyebrow: 'Trọn vẹn một buổi tối',
     href: routes.list(MovieLists.SINGLE),
   },
   {
-    source: { kind: 'list', slug: MovieLists.CINEMA },
-    title: 'Phim chiếu rạp',
-    eyebrow: 'Mới ra rạp',
-    href: routes.list(MovieLists.CINEMA),
+    source: { kind: 'list', slug: MovieLists.SERIES },
+    title: 'Phim bộ',
+    eyebrow: 'Dài tập, xem cả tuần',
+    href: routes.list(MovieLists.SERIES),
   },
   {
     source: { kind: 'list', slug: MovieLists.ANIME },
@@ -73,10 +70,31 @@ const HOME_ROWS: readonly HomeRow[] = [
     eyebrow: 'Giải trí & thực tế',
     href: routes.list(MovieLists.TV_SHOWS),
   },
+  {
+    source: { kind: 'list', slug: MovieLists.CINEMA },
+    title: 'Phim chiếu rạp',
+    eyebrow: 'Mới ra rạp',
+    href: routes.list(MovieLists.CINEMA),
+  },
+  {
+    source: { kind: 'language', lang: 'vietsub' },
+    title: 'Vietsub',
+    eyebrow: 'Tiếng gốc, phụ đề Việt',
+    href: routes.language('vietsub'),
+  },
+  {
+    source: { kind: 'language', lang: 'thuyet-minh' },
+    title: 'Thuyết minh',
+    eyebrow: 'Giọng đọc trên nền tiếng gốc',
+    href: routes.language('thuyet-minh'),
+  },
+  {
+    source: { kind: 'language', lang: 'long-tieng' },
+    title: 'Lồng tiếng',
+    eyebrow: 'Thoại tiếng Việt trọn vẹn',
+    href: routes.language('long-tieng'),
+  },
 ];
-
-/** The language band breaks the run of rails after the third one. */
-const BAND_AFTER = 3;
 
 const ROW_SOURCES: readonly CatalogSource[] = HOME_ROWS.map((row) => row.source);
 
@@ -97,89 +115,6 @@ function renderRow(row: HomeRow, query: RowQuery) {
       items={query.data?.items ?? []}
       isLoading={query.isPending}
     />
-  );
-}
-
-/* ── language band ───────────────────────────────────────────────────────── */
-
-interface LanguageTile {
-  readonly icon: IconName;
-  readonly blurb: string;
-  /** Per-tile box, so the three read as a bento rather than a row of clones. */
-  readonly box: string;
-}
-
-const LANGUAGE_TILES: Record<string, LanguageTile> = {
-  vietsub: {
-    icon: 'globe',
-    blurb: 'Giữ nguyên tiếng gốc, phụ đề tiếng Việt.',
-    box: 'sm:col-span-2 lg:col-span-1 lg:min-h-[13.5rem]',
-  },
-  'thuyet-minh': {
-    icon: 'volume',
-    blurb: 'Một giọng đọc dẫn chuyện trên nền tiếng gốc.',
-    box: 'lg:min-h-[11.5rem]',
-  },
-  'long-tieng': {
-    icon: 'film',
-    blurb: 'Thoại tiếng Việt trọn vẹn, không phải đọc.',
-    box: 'lg:min-h-[12.5rem]',
-  },
-};
-
-function LanguageBand() {
-  return (
-    <section aria-labelledby="duyet-ngon-ngu" className="gutter">
-      <header>
-        <p className="eyebrow mb-1.5">Nghe theo cách của bạn</p>
-        <h2 id="duyet-ngon-ngu" className="text-section font-semibold text-text-high">
-          Duyệt theo ngôn ngữ
-        </h2>
-      </header>
-
-      <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:items-end">
-        {languageOptions.map((option, index) => {
-          const tile = LANGUAGE_TILES[option.slug];
-          return (
-            <li key={option.slug} className={tile?.box ?? ''}>
-              <Link
-                to={routes.language(option.slug)}
-                className="group relative flex h-full min-h-[7.5rem] flex-col justify-end overflow-hidden rounded-card bg-surface-1 p-5 ring-1 ring-outline/60 transition duration-300 ease-out-expo hover:-translate-y-1 hover:bg-surface-2 hover:shadow-lift hover:ring-accent focus-visible:-translate-y-1 focus-visible:ring-accent"
-              >
-                {/* Editorial ordinal, not decoration for its own sake: it gives
-                    the band a reading order the three equal tiles otherwise lack. */}
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute -top-3 right-1 select-none text-display font-black leading-none text-outline/60 transition-colors duration-300 ease-out-expo group-hover:text-accent/25"
-                >
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 bg-linear-to-br from-surface-3/50 via-transparent to-transparent"
-                />
-
-                <span className="relative grid size-9 place-items-center rounded-full bg-surface-3/80 text-text-mid ring-1 ring-outline transition-colors duration-300 group-hover:bg-accent group-hover:text-white group-hover:ring-accent">
-                  <Icon name={tile?.icon ?? 'globe'} size={16} />
-                </span>
-
-                {/* A tier below the page <h1>. At `text-screen font-black` these
-                    three mid-page cards tied the heading of every other screen,
-                    which flattens exactly the hierarchy the scale is built for. */}
-                <h3 className="relative mt-4 text-section font-semibold text-text-high transition-colors duration-300 group-hover:text-accent-soft">
-                  {option.label}
-                </h3>
-
-                {tile ? (
-                  <p className="clamp-2 relative mt-1 text-sm text-text-mid">{tile.blurb}</p>
-                ) : null}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
   );
 }
 
@@ -252,18 +187,10 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* One uninterrupted run of shelves — the bento band that used to split
+          them in two is gone, and the language cuts are shelves of their own. */}
       <div className="mt-10 space-y-row-gap sm:mt-12">
-        {HOME_ROWS.slice(0, BAND_AFTER).map((row, index) => renderRow(row, rowQueries[index]))}
-      </div>
-
-      <div className="mt-row-gap">
-        <LanguageBand />
-      </div>
-
-      <div className="mt-row-gap space-y-row-gap">
-        {HOME_ROWS.slice(BAND_AFTER).map((row, index) =>
-          renderRow(row, rowQueries[BAND_AFTER + index]),
-        )}
+        {HOME_ROWS.map((row, index) => renderRow(row, rowQueries[index]))}
       </div>
 
       <ConfirmDialog

@@ -26,15 +26,17 @@ const cx = (...parts: (string | false | null | undefined)[]): string =>
 /** Stable empty identity, so the filter memo does not re-run while pending. */
 const NO_ITEMS: readonly Taxonomy[] = [];
 
-/** Every 7th tile spans two columns — the whole reason this is not a spreadsheet. */
-const FEATURED_EVERY = 7;
 const YEAR_COUNT = 24;
 
 const GRID =
-  'grid grid-flow-row-dense grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5';
+  'grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5';
 
-const TILE_HEIGHT = 'min-h-[5.5rem] sm:min-h-[6.75rem]';
-const FEATURED_HEIGHT = 'min-h-[7rem] sm:min-h-[8.75rem]';
+/* Every tile identical, and only as tall as the name needs.
+   It used to reserve room for a slug line that no longer exists, which left the
+   name marooned at the bottom of a half-empty box. Fixed rather than automatic
+   so a two-line name cannot make its own tile taller than its neighbours: the
+   height is exactly two lines plus padding, and `clamp-2` holds anything longer. */
+const TILE_HEIGHT = 'h-[4.75rem] sm:h-[5.25rem]';
 
 interface KindConfig {
   readonly title: string;
@@ -226,13 +228,12 @@ function TaxonomyIndex({ kind, items, isPending, isError, error, onRetry }: Taxo
 
         {!isPending && !isError && filtered.length > 0 ? (
           <ul className={GRID}>
-            {filtered.map((item, index) => (
+            {filtered.map((item) => (
               <TaxonomyTile
                 key={item.slug}
                 item={item}
                 href={config.hrefOf(item.slug)}
                 icon={config.icon}
-                featured={index % FEATURED_EVERY === FEATURED_EVERY - 1}
               />
             ))}
           </ul>
@@ -242,24 +243,14 @@ function TaxonomyIndex({ kind, items, isPending, isError, error, onRetry }: Taxo
   );
 }
 
-function TaxonomyTile({
-  item,
-  href,
-  icon,
-  featured,
-}: {
-  item: Taxonomy;
-  href: string;
-  icon: IconName;
-  featured: boolean;
-}) {
+function TaxonomyTile({ item, href, icon }: { item: Taxonomy; href: string; icon: IconName }) {
   return (
-    <li className={featured ? 'col-span-2' : undefined}>
+    <li>
       <Link
         to={href}
         className={cx(
-          'group relative isolate flex h-full flex-col justify-between overflow-hidden rounded-card border border-outline/70 p-3.5 sm:p-4',
-          featured ? cx('bg-surface-2', FEATURED_HEIGHT) : cx('bg-surface-1', TILE_HEIGHT),
+          'group relative isolate flex h-full flex-col justify-start overflow-hidden rounded-card border border-outline/70 p-3 sm:p-3.5',
+          cx('bg-surface-1', TILE_HEIGHT),
           'transition-[transform,border-color,box-shadow] duration-300 ease-out-expo',
           'hover:-translate-y-1 hover:border-accent/60 hover:shadow-lift',
           'focus-visible:-translate-y-1 focus-visible:border-accent/60',
@@ -276,25 +267,18 @@ function TaxonomyTile({
           className="pointer-events-none absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-accent transition-transform duration-500 ease-out-expo group-hover:scale-x-100 group-focus-visible:scale-x-100"
         />
 
-        {featured ? (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-3 -right-3 text-outline transition-[transform,color] duration-500 ease-out-expo group-hover:rotate-6 group-hover:text-accent/50"
-          >
-            <Icon name={icon} size={84} />
-          </span>
-        ) : null}
-
-        <span className="relative z-10 block truncate text-eyebrow text-text-mid uppercase">
-          {item.slug}
+        {/* The watermark used to be the featured tile's privilege; every tile
+            carries it now, sized down so it reads as texture, not as content. */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-1.5 -right-1.5 text-outline/70 transition-[transform,color] duration-500 ease-out-expo group-hover:rotate-6 group-hover:text-accent/40"
+        >
+          <Icon name={icon} size={44} />
         </span>
 
-        <span className="relative z-10 mt-4 flex items-end gap-1.5">
+        <span className="relative z-10 flex items-end gap-1.5">
           <span
-            className={cx(
-              featured ? 'text-screen' : 'text-section',
-              'clamp-2 font-semibold text-text-high transition-colors duration-200 group-hover:text-accent-soft',
-            )}
+            className="clamp-2 text-section font-semibold text-text-high transition-colors duration-200 group-hover:text-accent-soft"
           >
             {item.name}
           </span>
@@ -312,13 +296,9 @@ function TaxonomyTile({
 function TileGridSkeleton({ count = 18 }: { count?: number }) {
   return (
     <div className={GRID} aria-hidden="true">
-      {Array.from({ length: count }, (_, index) =>
-        index % FEATURED_EVERY === FEATURED_EVERY - 1 ? (
-          <Skeleton key={index} className="col-span-2 h-[7rem] sm:h-[8.75rem]" />
-        ) : (
-          <Skeleton key={index} className="h-[5.5rem] sm:h-[6.75rem]" />
-        ),
-      )}
+      {Array.from({ length: count }, (_, index) => (
+        <Skeleton key={index} className="h-[4.75rem] sm:h-[5.25rem]" />
+      ))}
     </div>
   );
 }
