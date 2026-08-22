@@ -18,7 +18,7 @@ const cx = (...parts: (string | false | null | undefined)[]): string =>
  * to pay for the extra width so a three-badge row still fits a rail card.
  */
 const BASE =
-  'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold uppercase ' +
+  'inline-flex items-center gap-1 rounded-cell px-1.5 py-0.5 text-xs font-semibold uppercase ' +
   'leading-4 tracking-wider backdrop-blur-md ring-1';
 
 const TONES: Record<BadgeTone, string> = {

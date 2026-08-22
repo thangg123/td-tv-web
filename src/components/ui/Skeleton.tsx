@@ -17,8 +17,8 @@ export function PosterSkeleton() {
   return (
     <div className="w-full">
       <Skeleton className="aspect-[2/3] w-full" />
-      <Skeleton className="mt-2.5 h-3.5 w-4/5 rounded-md" />
-      <Skeleton className="mt-1.5 h-3 w-1/2 rounded-md" />
+      <Skeleton className="mt-2.5 h-3.5 w-4/5 rounded-pill" />
+      <Skeleton className="mt-1.5 h-3 w-1/2 rounded-pill" />
     </div>
   );
 }
@@ -65,13 +65,13 @@ export function DetailSkeleton() {
           <div className="contents md:block md:min-w-0 md:flex-1 md:pb-3">
             <div className="min-w-0">
               {/* eyebrow — a 44px tap target pulled back to ~20px by `-my-3`. */}
-              <Skeleton className="h-5 w-24 rounded-md" />
+              <Skeleton className="h-5 w-24 rounded-pill" />
               {/* Title: text-hero is ~29px a line and clamps to 3 on a phone. */}
-              <Skeleton className="mt-3 h-7 w-full rounded-md" />
-              <Skeleton className="mt-0.5 h-7 w-11/12 rounded-md" />
-              <Skeleton className="mt-0.5 h-7 w-2/3 rounded-md" />
+              <Skeleton className="mt-3 h-7 w-full rounded-pill" />
+              <Skeleton className="mt-0.5 h-7 w-11/12 rounded-pill" />
+              <Skeleton className="mt-0.5 h-7 w-2/3 rounded-pill" />
               {/* Origin name, one line. */}
-              <Skeleton className="mt-2 h-5 w-1/2 rounded-md" />
+              <Skeleton className="mt-2 h-5 w-1/2 rounded-pill" />
             </div>
 
             <div className="col-span-2 min-w-0 md:mt-4">
@@ -80,7 +80,7 @@ export function DetailSkeleton() {
                 <Skeleton className="h-6 w-14 rounded-pill" />
                 <Skeleton className="h-6 w-20 rounded-pill" />
               </div>
-              <Skeleton className="mt-3 h-5 w-2/3 rounded-md" />
+              <Skeleton className="mt-3 h-5 w-2/3 rounded-pill" />
             </div>
           </div>
         </div>
@@ -93,9 +93,9 @@ export function DetailSkeleton() {
       </div>
 
       <div className="gutter mt-10 space-y-2.5">
-        <Skeleton className="h-3.5 w-full rounded-md" />
-        <Skeleton className="h-3.5 w-11/12 rounded-md" />
-        <Skeleton className="h-3.5 w-4/5 rounded-md" />
+        <Skeleton className="h-3.5 w-full rounded-pill" />
+        <Skeleton className="h-3.5 w-11/12 rounded-pill" />
+        <Skeleton className="h-3.5 w-4/5 rounded-pill" />
       </div>
 
       <div className="mt-row-gap">

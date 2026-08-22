@@ -79,7 +79,7 @@ export default function EmbedPlayer({ url, title, onExit, className }: EmbedPlay
         referrerPolicy="no-referrer"
         sandbox={SANDBOX}
       />
-      <p className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-md border border-outline/70 bg-ink/75 px-2.5 py-1.5 text-eyebrow uppercase text-text-mid backdrop-blur-md">
+      <p className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-cell border border-outline/70 bg-ink/75 px-2.5 py-1.5 text-eyebrow uppercase text-text-mid backdrop-blur-md">
         <Icon name="external" size={12} />
         Trình phát dự phòng
       </p>

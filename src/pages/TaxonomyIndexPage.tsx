@@ -189,7 +189,7 @@ function TaxonomyIndex({ kind, items, isPending, isError, error, onRetry }: Taxo
                  a focused field's text is under 16px — hence `text-base` above. */
               <IconButton
                 icon="close"
-                label="Xóa bộ lọc"
+                label="Xóa từ khóa"
                 onClick={() => setTerm('')}
                 className="absolute top-1/2 right-0.5 min-h-11 min-w-11 -translate-y-1/2"
               />
@@ -206,7 +206,7 @@ function TaxonomyIndex({ kind, items, isPending, isError, error, onRetry }: Taxo
         {!isPending && !isError && all.length === 0 ? (
           <EmptyState
             title="Chưa có dữ liệu."
-            message="Danh sách này hiện đang trống. Hãy thử lại sau."
+            message="Danh sách này đang trống. Vui lòng quay lại sau."
             icon={config.icon}
             action={
               <Button variant="primary" size="lg" icon="refresh" onClick={onRetry}>

@@ -241,8 +241,8 @@ export default function WatchPage() {
         <BackRow to={routes.detail(slug)} />
         <Skeleton className="aspect-video w-full rounded-none lg:rounded-card" />
         <div className="mt-6 space-y-3 px-gutter lg:px-0">
-          <Skeleton className="h-7 w-2/3 rounded-md" />
-          <Skeleton className="h-4 w-2/5 rounded-md" />
+          <Skeleton className="h-7 w-2/3 rounded-pill" />
+          <Skeleton className="h-4 w-2/5 rounded-pill" />
         </div>
       </WatchShell>
     );
