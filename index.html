@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07080C" />
+    <meta name="color-scheme" content="dark" />
+    <!-- Personal deploy: nothing here should ever be indexed or crawled. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+
+    <title>CiCi TV</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      Both hosts are hit on the very first paint (API on load, poster CDN a few
+      milliseconds later), so the TLS handshakes are started before the bundle
+      has even finished parsing.
+    -->
+    <link rel="preconnect" href="https://phimapi.com" crossorigin />
+    <link rel="preconnect" href="https://phimimg.com" crossorigin />
+    <link rel="dns-prefetch" href="https://image.tmdb.org" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
