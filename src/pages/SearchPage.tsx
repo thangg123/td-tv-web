@@ -125,7 +125,14 @@ export default function SearchPage() {
     setDraft(urlKeyword);
   }, [urlKeyword]);
 
+  /*
+   * Autofocus is a pointer-only affordance. On a phone it throws the keyboard
+   * over half the screen and scrolls the page before the visitor has decided
+   * they want to type at all — so a coarse pointer gets the field, not the
+   * keyboard, and taps into it when ready.
+   */
   useEffect(() => {
+    if (window.matchMedia('(pointer: coarse)').matches) return;
     inputRef.current?.focus();
   }, []);
 
@@ -283,6 +290,8 @@ export default function SearchPage() {
             <label htmlFor="tu-khoa" className="sr-only">
               Từ khóa tìm phim
             </label>
+            {/* `min-h-11`: `text-hero` bottoms out at 28px, but its 1.05
+                line-height leaves the hit box only one line tall. */}
             <input
               id="tu-khoa"
               ref={inputRef}
@@ -296,13 +305,14 @@ export default function SearchPage() {
               autoCorrect="off"
               spellCheck={false}
               aria-describedby="tu-khoa-mo-ta"
-              className="min-w-0 flex-1 bg-transparent text-hero font-bold tracking-tight text-text-high caret-accent outline-none placeholder:font-normal placeholder:text-text-low/70"
+              className="min-h-11 min-w-0 flex-1 bg-transparent text-hero font-bold tracking-tight text-text-high caret-accent outline-none placeholder:font-normal placeholder:text-text-low/70"
             />
 
             {draft.length > 0 && (
               <IconButton
                 icon="close"
                 label="Xóa từ khóa"
+                size="lg"
                 onClick={onClearKeyword}
                 className="shrink-0"
               />
@@ -336,7 +346,10 @@ export default function SearchPage() {
             ref={resultsRef}
             aria-label="Kết quả tìm kiếm"
             aria-busy={isFetching}
-            className="scroll-mt-32 pt-8 pb-20 lg:pt-10"
+            // scroll-mt clears the header plus the sticky filter toolbar. The
+            // bar wraps to three 44px rows below 392px (161px) and settles at
+            // ~110px above it; the header is 64px, 72px from lg.
+            className="scroll-mt-56 pt-8 pb-20 min-[24.5rem]:scroll-mt-44 lg:scroll-mt-[11.5rem] lg:pt-10"
           >
             {isPending ? (
               <div className="gutter">
@@ -357,10 +370,10 @@ export default function SearchPage() {
                   filterCount > 0 ? (
                     // The primary belongs to the way forward, not to the reset.
                     <div className="flex flex-wrap items-center justify-center gap-3">
-                      <LinkButton to={routes.home} variant="primary" icon="arrow-left">
+                      <LinkButton to={routes.home} variant="primary" size="lg" icon="arrow-left">
                         Về trang chủ
                       </LinkButton>
-                      <Button variant="secondary" icon="close" onClick={clearFilters}>
+                      <Button variant="secondary" size="lg" icon="close" onClick={clearFilters}>
                         Xóa lọc ({filterCount})
                       </Button>
                     </div>
@@ -438,7 +451,9 @@ export default function SearchPage() {
 function SuggestionPanel({ years }: { years: readonly number[] }) {
   return (
     <section aria-labelledby="goi-y" className="gutter pt-8 pb-24 lg:pt-10">
-      <div className="grain relative overflow-hidden rounded-card border border-outline/70 bg-surface-1/70 px-6 py-9 shadow-lift sm:px-10 sm:py-12">
+      {/* At 320 the page gutter already costs 32px; a 24px inner pad on top of
+          it left the chips a 240px lane, so the phone step is trimmed. */}
+      <div className="grain relative overflow-hidden rounded-card border border-outline/70 bg-surface-1/70 px-5 py-8 shadow-lift sm:px-10 sm:py-12">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full bg-violet/10 blur-[90px]"

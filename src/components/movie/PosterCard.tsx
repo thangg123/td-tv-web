@@ -102,7 +102,12 @@ function PosterCard({ movie, priority = false, className = '' }: PosterCardProps
         size="sm"
         onClick={onToggleFavorite}
         aria-pressed={isFavorite}
-        className={`absolute left-2 top-2 z-20 backdrop-blur-md transition-opacity duration-200 ${
+        /*
+         * `min-*` rather than `size-*`: it raises the 32px square to the 44px
+         * touch floor without having to out-order the `h-8 w-8` the size prop
+         * already emitted. A fine pointer gets the compact square back.
+         */
+        className={`absolute left-2 top-2 z-20 min-h-11 min-w-11 backdrop-blur-md transition-opacity duration-200 sm:min-h-0 sm:min-w-0 ${
           isFavorite ? 'text-mint opacity-100' : 'reveal-on-hover'
         }`}
       />

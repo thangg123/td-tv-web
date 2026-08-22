@@ -28,12 +28,31 @@ interface FilterOption {
 
 type OptionStatus = 'pending' | 'error' | 'ready';
 
-/** Keep the panel and the alignment maths agreeing on one number. */
+/** Panel box in px, measured against the viewport each time it opens. */
+interface PanelPlacement {
+  /** Horizontal offset from the trigger's own left edge, already clamped. */
+  readonly left: number;
+  readonly width: number;
+  readonly maxHeight: number;
+}
+
+/** Keep the panel and the placement maths agreeing on one set of numbers. */
 const PANEL_WIDTH_PX = 240;
 const EDGE_GAP_PX = 16;
+/** Matches the `top-[calc(100%+0.5rem)]` the panel is offset by. */
+const PANEL_GAP_PX = 8;
+/** Below this the panel is uselessly short; better to overhang than to clip. */
+const PANEL_MIN_HEIGHT_PX = 200;
+const PANEL_MAX_HEIGHT_PX = 320;
 
+/*
+ * 44px tall on a phone, back to the compact desktop pill from `md`. The label
+ * truncates harder on narrow screens so a long selected value cannot stretch a
+ * trigger across the whole row and push the rest of the axes down another line.
+ */
 const TRIGGER_BASE =
-  'inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-xs font-medium ' +
+  'inline-flex min-h-11 items-center gap-1.5 rounded-pill border px-3 py-2 text-sm font-medium ' +
+  'md:min-h-0 md:py-1.5 md:text-xs ' +
   'transition duration-200 active:scale-[0.97]';
 
 export default function FilterBar({
@@ -93,7 +112,13 @@ export default function FilterBar({
       aria-label="Bộ lọc"
       className="sticky top-[var(--header-h,4rem)] z-30 border-b border-outline/60 bg-ink/85 backdrop-blur-xl"
     >
-      <div className="gutter flex flex-wrap items-center gap-2 py-3">
+      {/*
+        Wrapped, never a sideways-scrolling row: the panels are absolutely
+        positioned against their trigger, and an `overflow-x` ancestor would
+        clip them on both axes. Five axes cost three lines at 320 and two from
+        390 up — tall, but every trigger stays reachable without a swipe.
+      */}
+      <div className="gutter flex flex-wrap items-center gap-1.5 py-2 sm:gap-2 sm:py-3">
         {fixedAxis !== 'category' && (
           <FilterDropdown
             axisLabel="Thể loại"
@@ -210,7 +235,7 @@ function FilterDropdown({
   isActive,
 }: FilterDropdownProps) {
   const [open, setOpen] = useState(false);
-  const [align, setAlign] = useState<'left' | 'right'>('left');
+  const [placement, setPlacement] = useState<PanelPlacement | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -238,24 +263,45 @@ function FilterDropdown({
   }, [open]);
 
   /*
-   * A chip near the right edge would push its panel off a narrow screen, and the
-   * page cannot scroll sideways to reach it — so the panel flips to the trigger's
-   * right edge, but only when that does not push it off the left instead.
+   * A trigger near either edge of a 320px screen would strand its panel: the
+   * page cannot scroll sideways to reach it, and `body` clips the overflow, so
+   * the options would simply be gone. Left/right alignment classes cannot
+   * express "neither edge fits" — the panel is instead pinned to a viewport x
+   * clamped into the safe band, expressed as an offset from the trigger's own
+   * box. The height is clamped the same way against the space below.
    */
   useLayoutEffect(() => {
     if (!open) return;
 
-    const trigger = triggerRef.current;
-    if (trigger) {
+    const place = () => {
+      const root = rootRef.current;
+      const trigger = triggerRef.current;
+      if (!root || !trigger) return;
+
+      const rootLeft = root.getBoundingClientRect().left;
       const rect = trigger.getBoundingClientRect();
       const width = Math.min(PANEL_WIDTH_PX, window.innerWidth - EDGE_GAP_PX * 2);
-      const overflowsRight = rect.left + width > window.innerWidth - EDGE_GAP_PX;
-      const fitsRightAligned = rect.right - width >= EDGE_GAP_PX;
-      setAlign(overflowsRight && fitsRightAligned ? 'right' : 'left');
-    }
+      const rightMost = Math.max(EDGE_GAP_PX, window.innerWidth - EDGE_GAP_PX - width);
+      const viewportLeft = Math.min(Math.max(rect.left, EDGE_GAP_PX), rightMost);
+      const room = window.innerHeight - rect.bottom - PANEL_GAP_PX - EDGE_GAP_PX;
 
-    // A thirty-entry year list opens on the wrong end without this.
+      setPlacement({
+        left: Math.round(viewportLeft - rootLeft),
+        width,
+        maxHeight: Math.max(
+          PANEL_MIN_HEIGHT_PX,
+          Math.min(PANEL_MAX_HEIGHT_PX, Math.round(room)),
+        ),
+      });
+    };
+
+    place();
+    window.addEventListener('resize', place);
+
+    // A hundred-entry year list opens on the wrong end without this.
     panelRef.current?.querySelector('[aria-checked="true"]')?.scrollIntoView({ block: 'nearest' });
+
+    return () => window.removeEventListener('resize', place);
   }, [open]);
 
   const choose = (next: string | null) => {
@@ -280,12 +326,12 @@ function FilterDropdown({
               : 'border-outline bg-surface-2 text-text-mid hover:bg-surface-3 hover:text-text-high'
         }`}
       >
-        <Icon name={icon} size={14} />
-        <span className="max-w-[9rem] truncate">{triggerLabel}</span>
+        <Icon name={icon} size={16} className="shrink-0" />
+        <span className="max-w-[6rem] truncate sm:max-w-[9rem]">{triggerLabel}</span>
         <Icon
           name="chevron-down"
-          size={14}
-          className={`transition-transform duration-200 ease-out-expo ${open ? 'rotate-180' : ''}`}
+          size={16}
+          className={`shrink-0 transition-transform duration-200 ease-out-expo ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -294,9 +340,18 @@ function FilterDropdown({
           ref={panelRef}
           role="menu"
           aria-label={axisLabel}
-          className={`absolute top-[calc(100%+0.5rem)] z-40 max-h-80 w-60 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-card border border-outline bg-surface-1/95 p-1.5 shadow-lift backdrop-blur-xl ${
-            align === 'right' ? 'right-0' : 'left-0'
-          }`}
+          /* The classes are the pre-measurement fallback; `placement` refines
+             them in the same commit, before paint. */
+          className="absolute top-[calc(100%+0.5rem)] left-0 z-40 max-h-80 w-60 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-card border border-outline bg-surface-1/95 p-1.5 shadow-lift backdrop-blur-xl"
+          style={
+            placement
+              ? {
+                  left: `${placement.left}px`,
+                  width: `${placement.width}px`,
+                  maxHeight: `${placement.maxHeight}px`,
+                }
+              : undefined
+          }
         >
           {resettable && (
             <OptionRow
@@ -349,7 +404,8 @@ function OptionRow({
       role="menuitemradio"
       aria-checked={selected}
       onClick={onClick}
-      className={`flex w-full items-center justify-between gap-2 rounded-cell px-2.5 py-2 text-left text-sm transition-colors duration-150 ${
+      /* A menu item is a tap target like any other: 44px, not 36. */
+      className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-cell px-2.5 py-2 text-left text-sm transition-colors duration-150 md:min-h-0 ${
         selected
           ? 'bg-accent-ink text-accent-soft'
           : 'text-text-mid hover:bg-surface-3 hover:text-text-high'

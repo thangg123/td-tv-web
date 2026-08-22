@@ -7,7 +7,10 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import type {
+  KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
+} from 'react';
 import Icon from '@/components/ui/Icon';
 import type { IconName } from '@/components/ui/Icon';
 import { formatDuration } from '@/lib/format';
@@ -33,10 +36,43 @@ const INTERACTIVE_TAGS = new Set(['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'A'])
 
 const swallow = () => undefined;
 
-/** iOS Safari has no element fullscreen — only the video element's own. */
+/*
+ * Vendor-prefixed fullscreen, declared rather than cast.
+ *
+ * iPhone Safari implements no element fullscreen at all — only the video
+ * element's own `webkitEnterFullscreen`, which hands playback to the system
+ * player. iPadOS and older WebViews still expose the prefixed element API.
+ * A plain `HTMLVideoElement` is assignable to these, so nothing needs casting.
+ */
 interface FullscreenCapableVideo extends HTMLVideoElement {
   webkitEnterFullscreen?: () => void;
 }
+
+interface FullscreenCapableElement extends HTMLElement {
+  webkitRequestFullscreen?: () => void;
+}
+
+interface FullscreenCapableDocument extends Document {
+  webkitFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => void;
+}
+
+const detectFullscreenSupport = (): boolean => {
+  if (typeof document === 'undefined') return false;
+  const doc: FullscreenCapableDocument = document;
+  const elementProto: FullscreenCapableElement = HTMLElement.prototype;
+  const videoProto: FullscreenCapableVideo = HTMLVideoElement.prototype;
+  if (doc.fullscreenEnabled && typeof elementProto.requestFullscreen === 'function') return true;
+  if (typeof elementProto.webkitRequestFullscreen === 'function') return true;
+  return typeof videoProto.webkitEnterFullscreen === 'function';
+};
+
+/*
+ * iOS refuses to set `video.volume` from script and a 3px slider is a poor
+ * thumb target, so a coarse pointer gets the mute toggle and nothing else.
+ */
+const detectFinePointer = (): boolean =>
+  typeof window === 'undefined' || window.matchMedia('(pointer: fine)').matches;
 
 export interface VideoPlayerProps {
   src: string;
@@ -64,6 +100,10 @@ export default function VideoPlayer({
   const hideTimerRef = useRef<number | null>(null);
   const pendingSeekRef = useRef<number | null>(null);
   const usingNativeRef = useRef(false);
+  /** Whether the last press on the video surface came from a finger. */
+  const tapOnSurfaceRef = useRef(false);
+  /** Controls state sampled at press time, before any reveal has run. */
+  const controlsWereVisibleRef = useRef(true);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isBuffering, setIsBuffering] = useState(true);
@@ -74,6 +114,8 @@ export default function VideoPlayer({
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [canFullscreen] = useState(detectFullscreenSupport);
+  const [hasFinePointer] = useState(detectFinePointer);
 
   /*
    * Volatile props live in a ref so that a parent re-render — which recreates
@@ -157,19 +199,33 @@ export default function VideoPlayer({
   }, []);
 
   const toggleFullscreen = useCallback(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    if (document.fullscreenElement) {
-      void document.exitFullscreen().catch(swallow);
+    const container: FullscreenCapableElement | null = containerRef.current;
+    const video: FullscreenCapableVideo | null = videoRef.current;
+    const doc: FullscreenCapableDocument = document;
+
+    if (doc.fullscreenElement) {
+      void doc.exitFullscreen().catch(swallow);
       return;
     }
-    if (typeof container.requestFullscreen === 'function') {
+    if (doc.webkitFullscreenElement) {
+      doc.webkitExitFullscreen?.();
+      return;
+    }
+    if (!container) return;
+
+    if (doc.fullscreenEnabled && typeof container.requestFullscreen === 'function') {
       void container.requestFullscreen().catch(() => {
-        (videoRef.current as FullscreenCapableVideo | null)?.webkitEnterFullscreen?.();
+        // Some WebKit builds expose the method and then reject it; the video's
+        // own fullscreen is the only thing left that works there.
+        video?.webkitEnterFullscreen?.();
       });
       return;
     }
-    (videoRef.current as FullscreenCapableVideo | null)?.webkitEnterFullscreen?.();
+    if (typeof container.webkitRequestFullscreen === 'function') {
+      container.webkitRequestFullscreen();
+      return;
+    }
+    video?.webkitEnterFullscreen?.();
   }, []);
 
   /* ── media element wiring ──────────────────────────────────────────────── */
@@ -436,12 +492,26 @@ export default function VideoPlayer({
   /* ── fullscreen + timer teardown ───────────────────────────────────────── */
 
   useEffect(() => {
-    const sync = () => setIsFullscreen(document.fullscreenElement === containerRef.current);
+    const video = videoRef.current;
+    const doc: FullscreenCapableDocument = document;
+
+    const sync = () => {
+      const active = doc.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+      setIsFullscreen(active === containerRef.current);
+    };
+    // iOS hands the video to the system player, which fires only these two.
+    const enterNative = () => setIsFullscreen(true);
+    const exitNative = () => setIsFullscreen(false);
+
     document.addEventListener('fullscreenchange', sync);
     document.addEventListener('webkitfullscreenchange', sync);
+    video?.addEventListener('webkitbeginfullscreen', enterNative);
+    video?.addEventListener('webkitendfullscreen', exitNative);
     return () => {
       document.removeEventListener('fullscreenchange', sync);
       document.removeEventListener('webkitfullscreenchange', sync);
+      video?.removeEventListener('webkitbeginfullscreen', enterNative);
+      video?.removeEventListener('webkitendfullscreen', exitNative);
     };
   }, []);
 
@@ -487,6 +557,43 @@ export default function VideoPlayer({
     revealControls();
   };
 
+  /* ── pointer ───────────────────────────────────────────────────────────── */
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    // A finger sliding over the picture is not hover. Treating it as such would
+    // keep the bar permanently open and leave the tap below nothing to close.
+    if (event.pointerType === 'touch') return;
+    revealControls();
+  };
+
+  const handleSurfacePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const byTouch = event.pointerType !== 'mouse';
+    tapOnSurfaceRef.current = byTouch;
+    if (!byTouch) return;
+    /*
+     * Sampled here because the container's own reveal runs on the way up the
+     * tree, before the click: without this the bar would already be "visible"
+     * by the time the tap is resolved and could never be toggled shut.
+     */
+    controlsWereVisibleRef.current = controlsVisible;
+    event.stopPropagation();
+  };
+
+  const handleSurfaceClick = () => {
+    if (!tapOnSurfaceRef.current) {
+      togglePlay();
+      return;
+    }
+    // A tap on hidden controls only brings them back — it must not also reach
+    // whatever sat under the finger.
+    if (!controlsWereVisibleRef.current) {
+      revealControls();
+      return;
+    }
+    clearHideTimer();
+    setControlsVisible(false);
+  };
+
   const shownVolume = isMuted ? 0 : volume;
 
   return (
@@ -496,7 +603,7 @@ export default function VideoPlayer({
       role="group"
       aria-label="Trình phát video"
       onKeyDown={handleKeyDown}
-      onPointerMove={revealControls}
+      onPointerMove={handlePointerMove}
       onPointerDown={revealControls}
       onFocus={revealControls}
       className={`group/player relative isolate aspect-video w-full select-none overflow-hidden bg-black ${
@@ -511,22 +618,35 @@ export default function VideoPlayer({
         className="absolute inset-0 h-full w-full bg-black object-contain"
       />
 
-      {/* Mouse-only play surface; keyboard users have Space and the toolbar. */}
+      {/*
+        Pointer-only surface; keyboard users have Space and the toolbar. A mouse
+        click plays, a tap toggles the control bar — see `handleSurfaceClick`.
+      */}
       <button
         type="button"
         tabIndex={-1}
-        onClick={togglePlay}
+        onPointerDown={handleSurfacePointerDown}
+        onClick={handleSurfaceClick}
         onDoubleClick={toggleFullscreen}
         aria-label={isPlaying ? 'Tạm dừng' : 'Phát'}
-        className="absolute inset-0 z-10 flex items-center justify-center"
+        className="absolute inset-0 z-10"
+      />
+
+      {/*
+        The badge is its own target so that a tap on it starts playback instead
+        of being eaten by the surface's show/hide toggle.
+      */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden="true"
+        onClick={togglePlay}
+        onDoubleClick={toggleFullscreen}
+        className={`absolute left-1/2 top-1/2 z-10 grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-ink/70 text-text-high shadow-lift backdrop-blur-sm transition duration-300 ease-out-back sm:h-20 sm:w-20 ${
+          isPlaying || isBuffering ? 'pointer-events-none scale-75 opacity-0' : 'scale-100 opacity-100'
+        }`}
       >
-        <span
-          className={`pointer-events-none grid h-16 w-16 place-items-center rounded-full border border-white/15 bg-ink/70 text-text-high shadow-lift backdrop-blur-sm transition duration-300 ease-out-back sm:h-20 sm:w-20 ${
-            isPlaying || isBuffering ? 'scale-75 opacity-0' : 'scale-100 opacity-100'
-          }`}
-        >
-          <Icon name="play" size={30} className="translate-x-0.5" />
-        </span>
+        <Icon name="play" size={30} className="translate-x-0.5" />
       </button>
 
       {isBuffering && (
@@ -540,7 +660,20 @@ export default function VideoPlayer({
       )}
 
       <div
-        className={`scrim-bottom absolute inset-x-0 bottom-0 z-20 px-3 pb-3 pt-16 transition duration-300 ease-out-expo sm:px-5 sm:pb-4 ${
+        /*
+         * Inline because it has to beat the padding utilities below, and only
+         * while fullscreen: in page flow the bar is nowhere near a screen edge.
+         */
+        style={
+          isFullscreen
+            ? {
+                paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+                paddingLeft: 'max(1.25rem, env(safe-area-inset-left))',
+                paddingRight: 'max(1.25rem, env(safe-area-inset-right))',
+              }
+            : undefined
+        }
+        className={`scrim-bottom absolute inset-x-0 bottom-0 z-20 px-3 pb-3 pt-12 transition duration-300 ease-out-expo sm:px-5 sm:pb-4 sm:pt-16 ${
           controlsVisible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0'
         }`}
       >
@@ -551,7 +684,16 @@ export default function VideoPlayer({
           onSeek={seekTo}
         />
 
-        <div className="mt-2 flex items-center gap-0.5 sm:gap-1.5">
+        {/*
+          The readout moves out of the button row on a phone: five 44px targets
+          plus a clock do not fit across 320px, and the targets win.
+        */}
+        <div className="flex items-center justify-between text-xs tabular-nums sm:hidden">
+          <span className="text-text-high">{formatDuration(currentTime * 1000)}</span>
+          <span className="text-text-mid">{formatDuration(duration * 1000)}</span>
+        </div>
+
+        <div className="mt-1.5 flex items-center gap-1 sm:mt-2 sm:gap-1.5">
           <ControlButton
             icon={isPlaying ? 'pause' : 'play'}
             label={isPlaying ? 'Tạm dừng' : 'Phát'}
@@ -572,20 +714,22 @@ export default function VideoPlayer({
               label={isMuted || volume === 0 ? 'Bật tiếng' : 'Tắt tiếng'}
               onClick={toggleMute}
             />
-            <VolumeBar value={shownVolume} onChange={applyVolume} />
+            {hasFinePointer && <VolumeBar value={shownVolume} onChange={applyVolume} />}
           </div>
 
-          <p className="ml-auto pl-2 text-[0.7rem] tabular-nums sm:text-sm">
+          <p className="ml-auto hidden pl-2 text-sm tabular-nums sm:block">
             <span className="text-text-high">{formatDuration(currentTime * 1000)}</span>
             <span className="text-text-low"> / {formatDuration(duration * 1000)}</span>
           </p>
 
-          <ControlButton
-            icon={isFullscreen ? 'shrink' : 'expand'}
-            label={isFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
-            onClick={toggleFullscreen}
-            className="ml-0.5 sm:ml-1"
-          />
+          {canFullscreen && (
+            <ControlButton
+              icon={isFullscreen ? 'shrink' : 'expand'}
+              label={isFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
+              onClick={toggleFullscreen}
+              className="ml-auto sm:ml-1"
+            />
+          )}
         </div>
       </div>
     </div>
@@ -617,7 +761,7 @@ function ControlButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-text-high/90 transition hover:bg-white/15 hover:text-white active:scale-90 sm:h-10 sm:w-10 ${
+      className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-text-high/90 transition hover:bg-white/15 hover:text-white active:scale-90 ${
         className ?? ''
       }`}
     >
@@ -629,6 +773,10 @@ function ControlButton({
 /*
  * A transparent native range stacked over the painted track: the browser keeps
  * dragging, click-to-jump and arrow-key stepping, and the visuals stay ours.
+ *
+ * The row is a 44px hit box on a phone while the painted track stays 3px — a
+ * thumb cannot reliably grab a 3px line, and fattening the line to match would
+ * turn the seek bar into the loudest thing on the picture.
  */
 function SeekBar({
   value,
@@ -646,7 +794,7 @@ function SeekBar({
   const bufferedPercent = ready ? Math.min(100, (buffered / max) * 100) : 0;
 
   return (
-    <div className="group/seek relative flex h-5 items-center">
+    <div className="group/seek relative flex h-11 items-center sm:h-6">
       <input
         type="range"
         min={0}
@@ -669,7 +817,7 @@ function SeekBar({
           style={{ width: `${playedPercent}%` }}
         />
         <span
-          className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent shadow-glow transition group-hover/seek:scale-150 peer-focus-visible:scale-150"
+          className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent shadow-glow transition group-hover/seek:scale-150 peer-focus-visible:scale-150 sm:h-2.5 sm:w-2.5"
           style={{ left: `${playedPercent}%` }}
         />
       </div>

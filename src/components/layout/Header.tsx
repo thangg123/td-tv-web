@@ -72,9 +72,16 @@ const NAV_GROUPS: readonly NavGroup[] = [
   },
 ];
 
-/** One shape for every square control in the bar, link or button alike. */
+/**
+ * One shape for every square control in the bar, link or button alike.
+ *
+ * 44px up to `xl`, which is exactly where the icon buttons stop being the only
+ * way in and the full nav takes over: below that the bar is being tapped, and a
+ * 36px target is under the WCAG floor. Past `xl` there is a pointer, and the
+ * denser 36 sits better beside the nav's own type.
+ */
 const ICON_CONTROL =
-  'inline-flex size-9 shrink-0 items-center justify-center rounded-pill border border-outline/70 bg-surface-2/60 text-text-mid transition-[color,background-color,border-color,transform] duration-200 ease-out-expo hover:-translate-y-px hover:border-accent/40 hover:bg-surface-3 hover:text-text-high active:translate-y-0';
+  'inline-flex size-11 shrink-0 items-center justify-center rounded-pill border border-outline/70 bg-surface-2/60 text-text-mid transition-[color,background-color,border-color,transform] duration-200 ease-out-expo hover:-translate-y-px hover:border-accent/40 hover:bg-surface-3 hover:text-text-high active:translate-y-0 xl:size-9';
 
 /** Tailwind's `xl`, mirrored so the drawer can dismiss itself on a rotation. */
 const DESKTOP_QUERY = '(min-width: 80rem)';
@@ -471,7 +478,7 @@ export default function Header() {
   return (
     <>
       <header
-        className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-300 ease-out-expo ${
+        className={`safe-top sticky top-0 z-50 border-b backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-300 ease-out-expo ${
           scrolled
             ? 'border-outline/70 bg-ink shadow-[0_18px_40px_-30px_rgb(0_0_0/0.95)]'
             : 'border-transparent bg-ink/60'
@@ -481,7 +488,9 @@ export default function Header() {
           <Link
             to={routes.home}
             aria-label="CiCi TV — trang chủ"
-            className="group flex shrink-0 items-center"
+            // The 36px lockup is left as it is; the link around it is padded out
+            // to a 44px target instead, so the tap area grows and nothing moves.
+            className="group flex min-h-11 min-w-11 shrink-0 items-center xl:min-h-0 xl:min-w-0"
           >
             <BrandMark />
           </Link>
@@ -568,7 +577,7 @@ export default function Header() {
               to={routes.library}
               aria-label="Thư viện"
               className={({ isActive }) =>
-                `hidden items-center gap-2 rounded-pill border px-3 py-2 text-sm font-medium transition-[color,background-color,border-color,transform] duration-200 ease-out-expo md:inline-flex lg:px-2.5 xl:px-3.5 ${
+                `hidden items-center gap-2 rounded-pill border px-3 py-3 text-sm font-medium transition-[color,background-color,border-color,transform] duration-200 ease-out-expo md:inline-flex lg:px-2.5 xl:px-3.5 xl:py-2 ${
                   isActive
                     ? 'border-accent/60 bg-accent-ink text-accent-soft'
                     : 'border-outline/70 bg-surface-2/60 text-text-mid hover:-translate-y-px hover:border-accent/40 hover:bg-surface-3 hover:text-text-high'
@@ -616,10 +625,14 @@ export default function Header() {
             aria-modal="true"
             aria-label="Menu"
             onKeyDown={trapMenuTab}
-            className="absolute inset-y-0 right-0 flex w-[min(20rem,88vw)] animate-fade-up flex-col border-l border-outline bg-surface-1 shadow-lift"
+            className="safe-end safe-top absolute inset-y-0 right-0 flex w-[min(20rem,88vw)] animate-fade-up flex-col border-l border-outline bg-surface-1 shadow-lift"
           >
             <div className="flex items-center justify-between gap-3 border-b border-outline/60 px-5 py-4">
-              <Link to={routes.home} aria-label="CiCi TV — trang chủ" className="group flex">
+              <Link
+                to={routes.home}
+                aria-label="CiCi TV — trang chủ"
+                className="group flex min-h-11 min-w-11 items-center"
+              >
                 <BrandMark />
               </Link>
               <button
@@ -636,7 +649,7 @@ export default function Header() {
             <div className="flex-1 overflow-y-auto px-3 py-5">
               <Link
                 to={routes.search()}
-                className="mb-7 flex items-center gap-3 rounded-pill border border-outline bg-surface-2 px-4 py-3 text-sm text-text-mid transition-colors duration-200 hover:border-accent/40 hover:text-text-high"
+                className="mb-7 flex min-h-11 items-center gap-3 rounded-pill border border-outline bg-surface-2 px-4 py-3 text-sm text-text-mid transition-colors duration-200 hover:border-accent/40 hover:text-text-high"
               >
                 <Icon name="search" size={18} />
                 Tìm phim, diễn viên…
@@ -657,7 +670,7 @@ export default function Header() {
                             to={item.to}
                             end={item.end}
                             className={({ isActive }) =>
-                              `flex items-center justify-between gap-3 rounded-card px-3 py-2.5 transition-colors duration-200 ${
+                              `flex min-h-11 items-center justify-between gap-3 rounded-card px-3 py-2.5 transition-colors duration-200 ${
                                 isActive
                                   ? 'bg-accent-ink font-semibold text-accent-soft'
                                   : 'text-text-mid hover:bg-surface-2 hover:text-text-high'
@@ -683,10 +696,10 @@ export default function Header() {
               </nav>
             </div>
 
-            <div className="border-t border-outline/60 p-3">
+            <div className="safe-bottom border-t border-outline/60 p-3">
               <Link
                 to={routes.library}
-                className="flex items-center justify-center gap-2 rounded-pill bg-accent px-4 py-3 text-sm font-semibold text-white transition-[transform,filter] duration-200 ease-out-expo hover:-translate-y-px hover:brightness-110 active:translate-y-0"
+                className="flex min-h-11 items-center justify-center gap-2 rounded-pill bg-accent px-4 py-3 text-sm font-semibold text-white transition-[transform,filter] duration-200 ease-out-expo hover:-translate-y-px hover:brightness-110 active:translate-y-0"
               >
                 <Icon name="bookmark" size={16} />
                 Thư viện

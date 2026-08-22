@@ -113,7 +113,12 @@ export default function MovieRail({
         {href && (
           <Link
             to={href}
-            className="group/all flex shrink-0 items-center gap-1 pb-0.5 text-sm font-medium text-text-mid transition-colors duration-200 hover:text-accent"
+            /*
+             * The padding is the hit box (20px of text + 24px = 44) and the
+             * matching negative margin hands the layout back the box it had,
+             * so the link still baselines against the heading beside it.
+             */
+            className="group/all -mx-2 -my-3 flex shrink-0 items-center gap-1 px-2 py-3 text-sm font-medium text-text-mid transition-colors duration-200 hover:text-accent"
           >
             Xem tất cả
             <Icon

@@ -52,18 +52,44 @@ export function DetailSkeleton() {
       <div className="relative">
         <Skeleton className="absolute inset-0 rounded-none" />
 
-        <div className="gutter relative flex flex-col justify-end gap-6 pt-8 pb-6 md:flex-row md:items-end md:pt-12 md:pb-8">
-        <Skeleton className="aspect-[2/3] w-44 flex-none md:w-56" />
-        <div className="flex-1 space-y-3 pb-2">
-          <Skeleton className="h-3 w-24 rounded-md" />
-          <Skeleton className="h-9 w-3/4 rounded-md" />
-          <Skeleton className="h-4 w-1/2 rounded-md" />
-          <div className="flex gap-2 pt-2">
-            <Skeleton className="h-10 w-32 rounded-pill" />
-            <Skeleton className="h-10 w-28 rounded-pill" />
+        {/*
+          Same geometry as DetailPage's band, and it has to stay that way or the
+          page jumps when the request resolves: below md the poster sits BESIDE
+          a text column and the badge row takes its own full-width line, so this
+          is a grid, not a centred column. From md it is a row again.
+        */}
+        <div className="gutter relative grid grid-cols-[auto_1fr] items-end gap-x-4 gap-y-4 pt-6 pb-6 md:flex md:justify-end md:gap-8 md:pt-12 md:pb-8">
+          <Skeleton className="aspect-[2/3] w-24 flex-none sm:w-32 md:w-56" />
+
+          {/* `contents` hands both blocks to the grid, exactly as DetailPage does. */}
+          <div className="contents md:block md:min-w-0 md:flex-1 md:pb-3">
+            <div className="min-w-0">
+              {/* eyebrow — a 44px tap target pulled back to ~20px by `-my-3`. */}
+              <Skeleton className="h-5 w-24 rounded-md" />
+              {/* Title: text-hero is ~29px a line and clamps to 3 on a phone. */}
+              <Skeleton className="mt-3 h-7 w-full rounded-md" />
+              <Skeleton className="mt-0.5 h-7 w-11/12 rounded-md" />
+              <Skeleton className="mt-0.5 h-7 w-2/3 rounded-md" />
+              {/* Origin name, one line. */}
+              <Skeleton className="mt-2 h-5 w-1/2 rounded-md" />
+            </div>
+
+            <div className="col-span-2 min-w-0 md:mt-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Skeleton className="h-6 w-16 rounded-pill" />
+                <Skeleton className="h-6 w-14 rounded-pill" />
+                <Skeleton className="h-6 w-20 rounded-pill" />
+              </div>
+              <Skeleton className="mt-3 h-5 w-2/3 rounded-md" />
             </div>
           </div>
         </div>
+      </div>
+
+      {/* The CTA row lives BELOW the band on the real page, at `size="lg"` (48px). */}
+      <div className="gutter mt-8 flex flex-wrap gap-3">
+        <Skeleton className="h-12 w-40 rounded-pill" />
+        <Skeleton className="h-12 w-28 rounded-pill" />
       </div>
 
       <div className="gutter mt-10 space-y-2.5">

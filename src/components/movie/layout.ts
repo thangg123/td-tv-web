@@ -13,8 +13,16 @@
  * leaf module both sides depend on.
  */
 
-/** Roughly 2.7 cards on a phone, five on a desktop — never a full card cut off. */
-export const RAIL_CARD_WIDTH = 'w-[34vw] sm:w-[10rem] lg:w-[10.75rem] xl:w-[11.75rem]';
+/**
+ * Roughly 2.2 cards on a phone, five on a desktop — never a full card cut off.
+ *
+ * 34vw put a 2:3 poster at 109px on a 320px screen, which is too narrow for the
+ * two-line title underneath. The phone step buys back ~15px per card; the fixed
+ * step lands at 392px, where 39vw already equals 9.5rem, so the width does not
+ * jump as the breakpoint crosses.
+ */
+export const RAIL_CARD_WIDTH =
+  'w-[39vw] min-[24.5rem]:w-[9.5rem] sm:w-[10rem] lg:w-[10.75rem] xl:w-[11.75rem]';
 
 /** Column ramp and gaps for every poster grid. */
 export const GRID_CLASS =

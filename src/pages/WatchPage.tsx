@@ -36,7 +36,7 @@ const CHROME_IDLE_MS = 3_000;
 
 /** Chrome sits on moving picture, so it borrows the player's own language. */
 const CHROME_BUTTON =
-  'inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-ink/70 ' +
+  'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-ink/70 ' +
   'text-text-high backdrop-blur-md transition hover:border-accent/60 hover:bg-accent hover:text-white ' +
   'active:scale-95';
 
@@ -311,8 +311,13 @@ export default function WatchPage() {
             Thử lại
           </Button>
           {canEmbed && (
-            <Button variant="secondary" icon="external" onClick={switchToEmbed}>
-              Dùng trình phát dự phòng
+            <Button
+              variant="secondary"
+              icon="external"
+              onClick={switchToEmbed}
+              className="max-w-full"
+            >
+              <span className="truncate">Dùng trình phát dự phòng</span>
             </Button>
           )}
         </div>
@@ -373,12 +378,15 @@ export default function WatchPage() {
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 bg-gradient-to-b from-ink/90 via-ink/45 to-transparent"
             />
-            <div className="relative flex items-start gap-3 px-3 pb-12 pt-3 sm:px-4 sm:pt-4">
+            {/* The picture bleeds to the edges of a phone, so the one control
+                drawn on top of it has to clear the notch and the rounded
+                corners itself — nothing above it is doing that. */}
+            <div className="relative flex items-start gap-3 pb-12 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pl-[max(1rem,env(safe-area-inset-left))] sm:pr-[max(1rem,env(safe-area-inset-right))] sm:pt-[max(1rem,env(safe-area-inset-top))]">
               <Link
                 to={routes.detail(movie.slug)}
                 aria-label={`Quay lại trang chi tiết phim ${movie.name}`}
                 title="Quay lại"
-                className={`${CHROME_BUTTON} w-10`}
+                className={`${CHROME_BUTTON} w-11`}
               >
                 <Icon name="arrow-left" />
               </Link>
@@ -517,7 +525,7 @@ function Synopsis({ text }: { text: string }) {
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
-          className="mt-2 inline-flex items-center gap-1 rounded-pill text-sm font-medium text-accent transition-colors duration-200 hover:text-accent-soft"
+          className="inline-flex min-h-11 items-center gap-1 rounded-pill text-sm font-medium text-accent transition-colors duration-200 hover:text-accent-soft"
         >
           {expanded ? 'Thu gọn' : 'Xem thêm'}
           <Icon
@@ -575,7 +583,11 @@ function useIdleChrome() {
 function WatchShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-ink-deep">
-      <main className="mx-auto w-full max-w-[112rem] lg:px-gutter lg:py-6">{children}</main>
+      {/* No site chrome on this route, so the home-indicator inset is this
+          page's own problem. */}
+      <main className="mx-auto w-full max-w-[112rem] pb-[env(safe-area-inset-bottom)] lg:px-gutter lg:py-6">
+        {children}
+      </main>
     </div>
   );
 }
@@ -583,7 +595,7 @@ function WatchShell({ children }: { children: ReactNode }) {
 /** The way out, for every state that has no player to overlay it on. */
 function BackRow({ to }: { to: string }) {
   return (
-    <div className="px-gutter py-4 lg:px-0 lg:pt-0">
+    <div className="px-gutter py-3 lg:px-0 lg:pt-0">
       <LinkButton to={to} variant="ghost" size="sm" icon="arrow-left">
         Quay lại
       </LinkButton>

@@ -129,8 +129,9 @@ export default function LibraryPage() {
                     size="sm"
                     icon="trash"
                     onClick={requestClear}
+                    className="max-w-full"
                   >
-                    Xóa toàn bộ lịch sử xem
+                    <span className="truncate">Xóa toàn bộ lịch sử xem</span>
                   </Button>
                 </div>
               </div>

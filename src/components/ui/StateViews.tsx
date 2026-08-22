@@ -7,8 +7,14 @@ import { toUserMessage } from '@/lib/api/client';
 const cx = (...parts: (string | false | null | undefined)[]): string =>
   parts.filter(Boolean).join(' ');
 
+/*
+ * `min-h` is a floor, not a height — the panel never grows the page beyond its
+ * own content. The 45vh is what stops an empty result from reading as a broken
+ * render; the vertical padding drops on a phone, where 45vh is already 300px of
+ * breathing room and another 128px is just scrolling.
+ */
 const PANEL =
-  'flex min-h-[45vh] flex-col items-center justify-center gap-4 px-gutter py-16 text-center';
+  'flex min-h-[45vh] flex-col items-center justify-center gap-4 px-gutter py-10 text-center sm:py-16';
 
 function Plate({ icon }: { icon: IconName }) {
   return (

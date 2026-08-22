@@ -32,11 +32,12 @@ const GRID =
   'grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5';
 
 /* Every tile identical, and only as tall as the name needs.
-   It used to reserve room for a slug line that no longer exists, which left the
-   name marooned at the bottom of a half-empty box. Fixed rather than automatic
-   so a two-line name cannot make its own tile taller than its neighbours: the
-   height is exactly two lines plus padding, and `clamp-2` holds anything longer. */
-const TILE_HEIGHT = 'h-[4.75rem] sm:h-[5.25rem]';
+   A floor rather than a fixed height: at 320 a two-column tile is ~139px wide,
+   which is roughly eleven characters a line, so "Khoa học viễn tưởng" needs a
+   third. The floor plus `h-full` keeps a row's tiles level with each other —
+   the grid stretches them all to the tallest — while letting that row breathe
+   where it must. `clamp-3` is the hard stop. */
+const TILE_HEIGHT = 'min-h-[4.75rem] sm:min-h-[5.25rem]';
 
 interface KindConfig {
   readonly title: string;
@@ -180,15 +181,17 @@ function TaxonomyIndex({ kind, items, isPending, isError, error, onRetry }: Taxo
               autoComplete="off"
               spellCheck={false}
               disabled={isPending || isError}
-              className="h-11 w-full rounded-pill border border-outline bg-surface-1/90 pr-11 pl-10 text-sm text-text-high transition-[border-color,background-color] duration-200 ease-out-expo placeholder:text-text-mid hover:border-outline/80 hover:bg-surface-2 focus:border-accent/60 disabled:opacity-50"
+              className="h-11 w-full rounded-pill border border-outline bg-surface-1/90 pr-12 pl-10 text-base text-text-high transition-[border-color,background-color] duration-200 ease-out-expo placeholder:text-text-mid hover:border-outline/80 hover:bg-surface-2 focus:border-accent/60 disabled:opacity-50 sm:text-sm"
             />
             {term ? (
+              /* `min-*` rather than a bigger `size`: the circle has to stay
+                 inside the 44px pill, and iOS Safari zooms the whole page when
+                 a focused field's text is under 16px — hence `text-base` above. */
               <IconButton
                 icon="close"
                 label="Xóa bộ lọc"
-                size="sm"
                 onClick={() => setTerm('')}
-                className="absolute top-1/2 right-1.5 -translate-y-1/2"
+                className="absolute top-1/2 right-0.5 min-h-11 min-w-11 -translate-y-1/2"
               />
             ) : null}
           </div>
@@ -206,7 +209,7 @@ function TaxonomyIndex({ kind, items, isPending, isError, error, onRetry }: Taxo
             message="Danh sách này hiện đang trống. Hãy thử lại sau."
             icon={config.icon}
             action={
-              <Button variant="primary" icon="refresh" onClick={onRetry}>
+              <Button variant="primary" size="lg" icon="refresh" onClick={onRetry}>
                 Thử lại
               </Button>
             }
@@ -219,7 +222,7 @@ function TaxonomyIndex({ kind, items, isPending, isError, error, onRetry }: Taxo
             message={`Không có mục nào khớp với "${term.trim()}".`}
             icon="search"
             action={
-              <Button variant="secondary" icon="close" onClick={() => setTerm('')}>
+              <Button variant="secondary" size="lg" icon="close" onClick={() => setTerm('')}>
                 Xóa lọc (1)
               </Button>
             }
@@ -278,7 +281,7 @@ function TaxonomyTile({ item, href, icon }: { item: Taxonomy; href: string; icon
 
         <span className="relative z-10 flex items-end gap-1.5">
           <span
-            className="clamp-2 text-section font-semibold text-text-high transition-colors duration-200 group-hover:text-accent-soft"
+            className="clamp-3 text-section font-semibold text-text-high transition-colors duration-200 group-hover:text-accent-soft"
           >
             {item.name}
           </span>

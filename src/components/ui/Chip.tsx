@@ -14,8 +14,9 @@ interface ChipProps {
 const cx = (...parts: (string | false | null | undefined)[]): string =>
   parts.filter(Boolean).join(' ');
 
+/* Same 44px touch floor as Button: `min-h` beats `h-8` up to the `md` breakpoint. */
 const BASE =
-  'inline-flex h-8 items-center gap-1.5 rounded-pill border px-3 text-xs font-medium tracking-wide whitespace-nowrap ' +
+  'inline-flex h-8 min-h-11 items-center gap-1.5 rounded-pill border px-3 text-xs font-medium tracking-wide whitespace-nowrap md:min-h-0 ' +
   'transition-[transform,color,background-color,border-color,box-shadow] duration-200 ease-out-expo';
 
 const REST = 'border-outline bg-surface-2 text-text-mid';
@@ -48,7 +49,7 @@ export default function Chip({
       {icon ? <Icon name={icon} size={14} /> : null}
       <span>{label}</span>
       {typeof count === 'number' && count > 0 ? (
-        <span className="rounded-full bg-ink/40 px-1.5 py-px text-[0.65rem] tabular-nums">
+        <span className="rounded-full bg-ink/40 px-1.5 py-px text-xs tabular-nums">
           {count}
         </span>
       ) : null}

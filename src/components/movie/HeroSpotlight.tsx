@@ -13,8 +13,18 @@ interface HeroSpotlightProps {
 const SLIDE_COUNT = 5;
 const ROTATE_MS = 7000;
 
-/** One box for the hero and for its skeleton, so nothing shifts as art arrives. */
-const HERO_BOX = 'relative isolate h-[62vh] min-h-[420px] max-h-[760px] w-full overflow-visible';
+/**
+ * One box for the hero and for its skeleton, so nothing shifts as art arrives.
+ *
+ * 62vh with a 420px floor meant the hero owned the whole first screen of a
+ * phone and the first rail never hinted at itself. The phone case is 42vh, and
+ * the 300px floor is what the stack below actually measures — a two-line
+ * display title, the badge row and a 48px pair of buttons — so on a 667px
+ * screen the floor wins by ~20px rather than the title being clipped.
+ */
+const HERO_BOX =
+  'relative isolate h-[42vh] min-h-[300px] max-h-[420px] w-full overflow-visible ' +
+  'sm:h-[62vh] sm:min-h-[420px] sm:max-h-[760px]';
 
 /*
  * The art starts above the section so it runs under the translucent header
@@ -83,7 +93,7 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
           <div className="absolute inset-0 bg-surface-1" />
           <div className="absolute inset-0 scrim-bottom" />
         </div>
-        <div className="gutter relative flex h-full max-w-3xl flex-col justify-end gap-4 pb-10 sm:pb-14">
+        <div className="gutter relative flex h-full max-w-3xl flex-col justify-end gap-4 pb-6 sm:pb-14">
           <div className="skeleton h-3 w-32 rounded-pill" />
           <div className="skeleton h-12 w-3/4 rounded-card sm:h-16" />
           <div className="skeleton h-4 w-1/2 rounded-pill" />
@@ -132,7 +142,7 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
         <div className="grain absolute inset-0" />
       </div>
 
-      <div className="gutter relative flex h-full flex-col justify-end pb-10 sm:pb-14">
+      <div className="gutter relative flex h-full flex-col justify-end pb-6 sm:pb-14">
         {/*
           The hover target is this box and nothing wider. It wraps the keyed
           child rather than being it, so a rotation does not remount the element
@@ -150,17 +160,22 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
           <div key={movie.slug} className="animate-fade-up">
           <p className="eyebrow on-art">Phim mới cập nhật</p>
 
-          <h1 className="clamp-2 on-art mt-3 text-display font-black text-text-high">
+          <h1 className="clamp-2 on-art mt-2 text-display font-black text-text-high sm:mt-3">
             {movie.name}
           </h1>
 
+          {/*
+            The original title is the first thing to go on a phone: it is one
+            tap away on the detail page, and its 32px are what the buttons and
+            the rotation dashes need to stay above the fold.
+          */}
           {hasOriginName && (
-            <p className="on-art mt-2 truncate text-base text-text-mid sm:text-lg">
+            <p className="on-art mt-2 hidden truncate text-base text-text-mid sm:block sm:text-lg">
               {movie.originName}
             </p>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 sm:mt-4">
             {movie.rating !== null && <RatingBadge rating={movie.rating} />}
             {movie.year !== null && (
               <span className="text-sm font-medium text-text-mid">{movie.year}</span>
@@ -172,7 +187,7 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
             />
           </div>
 
-          <div className="mt-7 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-3 sm:mt-7">
             <LinkButton to={routes.watch(movie.slug)} variant="primary" size="lg" icon="play">
               Xem ngay
             </LinkButton>
@@ -184,7 +199,15 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
         </div>
 
         {slides.length > 1 && (
-          <div className="absolute bottom-10 right-gutter hidden items-center gap-1.5 sm:bottom-14 sm:flex">
+          /*
+           * The dashes stay off the phone, reluctantly — they are the only
+           * hint that the hero rotates at all. Five 44px targets cannot share
+           * the bottom-right corner with two large CTAs, and putting them in
+           * the flow underneath costs 56px of a 300px hero: at 320px the two
+           * buttons already wrap to two rows, and that 56px is exactly what
+           * pushes the title up under the header.
+           */
+          <div className="absolute right-gutter bottom-14 hidden items-center gap-1.5 sm:flex">
             {slides.map((slide, position) => (
               <button
                 key={slide.slug}
@@ -192,7 +215,7 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
                 aria-label={`Phim ${position + 1}`}
                 aria-current={position === safeIndex}
                 onClick={() => setIndex(position)}
-                className="group/dash px-1 py-3"
+                className="group/dash grid min-h-11 min-w-11 place-items-center px-1.5 py-3"
               >
                 <span className="block h-[3px] w-9 overflow-hidden rounded-pill bg-text-low/40 transition-colors duration-200 group-hover/dash:bg-text-mid/60">
                   <span

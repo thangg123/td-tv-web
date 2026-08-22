@@ -25,9 +25,16 @@ const cx = (...parts: (string | false | null | undefined)[]): string =>
 /*
  * Only compositor-friendly properties are listed here — a button that
  * transitions its padding janks the whole row it sits in.
+ *
+ * `min-h-11` is the WCAG 44px touch floor and it is unconditional below `md`,
+ * where every visitor is holding the thing. From `md` up the `h-*` in SIZES
+ * takes back over, so a mouse still gets the compact `sm` and `md` buttons.
+ * A width breakpoint rather than `pointer-coarse` because the floor has to hold
+ * under a plain narrow-window audit too, not only under touch emulation.
  */
 const BASE =
   'inline-flex select-none items-center justify-center gap-2 rounded-pill font-medium whitespace-nowrap ' +
+  'min-h-11 md:min-h-0 ' +
   'transition-[transform,color,background-color,border-color,box-shadow,filter] duration-200 ease-out-expo ' +
   'disabled:pointer-events-none disabled:opacity-50';
 
@@ -131,7 +138,13 @@ export function IconButton({
       type={type}
       aria-label={label}
       title={label}
-      className={cx(BASE, VARIANTS[variant], SQUARE_SIZES[size], 'p-0', className)}
+      className={cx(
+        BASE,
+        VARIANTS[variant],
+        SQUARE_SIZES[size],
+        'p-0 min-w-11 md:min-w-0',
+        className,
+      )}
       {...rest}
     >
       <Icon name={icon} size={ICON_PX[size]} />

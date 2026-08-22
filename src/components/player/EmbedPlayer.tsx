@@ -39,7 +39,12 @@ export default function EmbedPlayer({ url, title, onExit, className }: EmbedPlay
   if (!safeUrl) {
     return (
       <div
-        className={`relative grid aspect-video w-full place-items-center bg-black px-6 text-center ${
+        /*
+         * The message is taller than a 16:9 box at phone widths, so the panel
+         * keeps a floor of its own and only follows the video ratio once the
+         * ratio is the larger of the two.
+         */
+        className={`relative grid aspect-video min-h-72 w-full place-items-center bg-black px-5 py-8 text-center ${
           className ?? ''
         }`}
       >

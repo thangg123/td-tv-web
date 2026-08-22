@@ -69,7 +69,11 @@
   --text-section--line-height: 1.25;
   --text-section--letter-spacing: -0.01em;
 
-  --text-eyebrow: 0.6875rem;
+  /*
+   * 12px is the floor for anything that has to be read on a phone held at arm's
+   * length; below that the 0.18em tracking stops helping and starts hurting.
+   */
+  --text-eyebrow: 0.75rem;
   --text-eyebrow--line-height: 1;
   --text-eyebrow--letter-spacing: 0.18em;
 
@@ -116,6 +120,17 @@
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 @layer base {
+  /*
+   * The gutter, plus whatever the hardware steals. `viewport-fit=cover` in
+   * index.html is what makes these insets non-zero; in landscape on a notched
+   * phone the cutout eats one side, so the two edges are resolved separately
+   * rather than through a single symmetric `padding-inline`.
+   */
+  :root {
+    --gutter-start: calc(var(--spacing-gutter) + env(safe-area-inset-left, 0px));
+    --gutter-end: calc(var(--spacing-gutter) + env(safe-area-inset-right, 0px));
+  }
+
   * {
     min-width: 0;
   }
@@ -178,7 +193,25 @@
 @layer components {
   /* Page gutter, matched to the TV app's overscan inset at desktop widths. */
   .gutter {
-    padding-inline: var(--spacing-gutter);
+    padding-inline: var(--gutter-start) var(--gutter-end);
+  }
+
+  /* For a sticky bar or a full-height overlay, which sit outside the gutter. */
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /*
+   * Only the trailing edge: the drawer is pinned right, so the left cutout of a
+   * landscape phone never reaches it, and padding for it would just eat 44px of
+   * a 320px panel.
+   */
+  .safe-end {
+    padding-inline-end: env(safe-area-inset-right, 0px);
   }
 
   /* One eyebrow, everywhere. The class owns the case and the size too. */
@@ -225,8 +258,8 @@
     gap: 0.875rem;
     overflow-x: auto;
     scroll-snap-type: x proximity;
-    scroll-padding-inline: var(--spacing-gutter);
-    padding-inline: var(--spacing-gutter);
+    scroll-padding-inline: var(--gutter-start) var(--gutter-end);
+    padding-inline: var(--gutter-start) var(--gutter-end);
     padding-block: 0.75rem;
     scrollbar-width: none;
   }

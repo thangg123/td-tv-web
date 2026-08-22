@@ -13,7 +13,12 @@ interface ContinueRailProps {
   title?: string;
 }
 
-const CARD_WIDTH = 'w-[74vw] sm:w-[17rem] lg:w-[19rem]';
+/**
+ * 74vw left only a 40px sliver of the second card on a 320px screen, which
+ * reads as a one-item row rather than a scrollable one. The fixed step lands at
+ * 392px, where 68vw is already 15rem.
+ */
+const CARD_WIDTH = 'w-[68vw] min-[24.5rem]:w-[15rem] sm:w-[17rem] lg:w-[19rem]';
 
 const RAISED =
   'group-hover:-translate-y-1 group-hover:shadow-lift group-hover:ring-2 group-hover:ring-accent ' +
@@ -54,13 +59,13 @@ export default function ContinueRail({
                       src={entry.landscapeImage}
                       alt={entry.name}
                       aspect="wide"
-                      sizes="(min-width: 1024px) 304px, (min-width: 640px) 272px, 74vw"
+                      sizes="(min-width: 1024px) 304px, (min-width: 640px) 272px, (min-width: 392px) 240px, 68vw"
                     />
 
                     <div className="pointer-events-none absolute inset-0 scrim-bottom" />
 
                     <span className="pointer-events-none absolute inset-0 grid place-items-center">
-                      <span className="grid size-12 scale-90 place-items-center rounded-full bg-accent pl-0.5 text-white opacity-0 shadow-lift transition duration-300 ease-out-back group-hover:scale-100 group-hover:opacity-100 group-focus-within:scale-100 group-focus-within:opacity-100">
+                      <span className="reveal-on-hover grid size-12 scale-90 place-items-center rounded-full bg-accent pl-0.5 text-white shadow-lift transition duration-300 ease-out-back group-hover:scale-100 group-focus-within:scale-100">
                         <Icon name="play" size={20} />
                       </span>
                     </span>
@@ -94,7 +99,7 @@ export default function ContinueRail({
                     variant="secondary"
                     size="sm"
                     onClick={() => onRemove(entry.slug)}
-                    className="reveal-on-hover absolute right-2 top-2 z-20 backdrop-blur-md transition-opacity duration-200"
+                    className="reveal-on-hover absolute right-2 top-2 z-20 min-h-11 min-w-11 backdrop-blur-md transition-opacity duration-200 sm:min-h-0 sm:min-w-0"
                   />
                 )}
               </article>

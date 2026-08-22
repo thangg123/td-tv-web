@@ -101,6 +101,9 @@ export default function EpisodePicker({
                 label={server.name}
                 active={index === safeServerIndex}
                 onClick={() => onSelectServer(index)}
+                /* Switching server is a real choice, so a finger gets the
+                   44px floor while a mouse keeps the compact pill. */
+                className="pointer-coarse:min-h-11"
               />
             ))}
           </div>
@@ -132,8 +135,15 @@ export default function EpisodePicker({
         */}
         <div
           ref={gridRef}
-          className={`relative mt-3 flex flex-wrap gap-2 overflow-y-auto pr-1 ${
-            isPanel ? 'max-h-[min(52vh,24rem)]' : 'max-h-[32rem]'
+          /*
+            Height is capped against the viewport as well as in rem: a flat
+            32rem is half a 667px phone, and the grid would push everything
+            after it — synopsis, cast, related — off the bottom of the screen.
+            `overscroll-contain` keeps a flick inside the grid from scrolling
+            the page on once the list bottoms out.
+          */
+          className={`relative mt-3 flex flex-wrap gap-2 overflow-y-auto overscroll-contain pr-1 ${
+            isPanel ? 'max-h-[min(52vh,24rem)]' : 'max-h-[min(56vh,32rem)]'
           }`}
         >
           {episodes.map((episode, index) => {
@@ -151,7 +161,7 @@ export default function EpisodePicker({
                 onClick={() => onSelectEpisode(index)}
                 className={`flex shrink-0 items-center justify-center rounded-cell border px-1.5 font-medium tabular-nums transition disabled:pointer-events-none disabled:opacity-35 ${
                   isDense ? 'w-13' : 'w-36 px-3'
-                } ${isPanel ? 'h-10 text-xs' : 'h-11 text-sm'} ${
+                } ${isPanel ? 'h-10 text-xs pointer-coarse:min-h-11' : 'h-11 text-sm'} ${
                   isActive
                     ? 'border-accent bg-accent text-white shadow-glow'
                     : 'border-outline bg-surface-2 text-text-mid hover:-translate-y-0.5 hover:border-accent/50 hover:bg-surface-3 hover:text-text-high active:translate-y-0 active:scale-95'

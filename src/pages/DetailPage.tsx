@@ -303,32 +303,55 @@ export default function DetailPage() {
           its space — so this padding is measured from there and is the whole
           gap, not a gap minus the header. That is why it is 48px and not 96.
         */}
-        <div className="gutter relative z-10 flex flex-col items-center justify-end gap-6 pt-8 pb-6 md:flex-row md:items-end md:gap-8 md:pt-12 md:pb-8">
+        {/*
+          Phone puts the poster BESIDE the title rather than above it: stacked,
+          the poster was 264px of art before a single word, which pushed the
+          title, the rating and the play button off the first screen entirely.
+          A grid rather than a row, because the badges do not fit in the ~180px
+          left over next to the poster — they get their own full-width line.
+        */}
+        <div className="gutter relative z-10 grid grid-cols-[auto_1fr] items-end gap-x-4 gap-y-4 pt-6 pb-6 md:flex md:justify-end md:gap-8 md:pt-12 md:pb-8">
         <SmartImage
           src={movie.posterUrl || movie.thumbUrl}
           alt={movie.name}
           aspect="poster"
-          sizes="(min-width: 768px) 224px, 176px"
-          className="w-44 flex-none rounded-card shadow-lift ring-1 ring-outline md:w-56"
+          sizes="(min-width: 768px) 224px, (min-width: 640px) 128px, 96px"
+          className="w-24 flex-none rounded-card shadow-lift ring-1 ring-outline sm:w-32 md:w-56"
         />
 
-        <div className="min-w-0 flex-1 text-center md:pb-3 md:text-left">
+        {/* `contents` hands the two blocks below to the grid as its own items;
+            from md the wrapper is a real column beside the poster again. */}
+        <div className="contents md:block md:min-w-0 md:flex-1 md:pb-3">
+          <div className="min-w-0 text-left">
           {listSlug ? (
             <Link
               to={routes.list(listSlug)}
-              className="eyebrow transition-colors duration-200 hover:text-accent"
+              // Negative margin so a 44px tap target costs the layout ~9px.
+              className="eyebrow -my-3 inline-flex min-h-11 items-center transition-colors duration-200 hover:text-accent"
             >
               {listTitle(listSlug)}
             </Link>
           ) : null}
 
-          <h1 className="mt-3 text-balance text-hero font-black text-text-high">{movie.name}</h1>
+          {/*
+            Clamped on phones only. Beside the poster the column is ~180-230px,
+            and a long title runs to five 28px lines — enough on its own to push
+            the band past half the screen. Three lines bounds the band whatever
+            the title length; from md the column never gets near the limit.
+          */}
+          <h1 className="mt-3 line-clamp-3 text-balance text-hero font-black text-text-high md:line-clamp-none">
+            {movie.name}
+          </h1>
 
           {movie.originName && movie.originName !== movie.name ? (
-            <p className="mt-2 text-base text-text-mid">{movie.originName}</p>
+            <p className="mt-2 line-clamp-1 text-base text-text-mid md:line-clamp-none">
+              {movie.originName}
+            </p>
           ) : null}
+          </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 md:justify-start">
+          <div className="col-span-2 min-w-0 md:mt-4">
+          <div className="flex flex-wrap items-center gap-2">
             {movie.rating !== null ? (
               <RatingBadge rating={movie.rating} votes={movie.voteCount} />
             ) : null}
@@ -350,12 +373,15 @@ export default function DetailPage() {
           })()}
           </div>
         </div>
+        </div>
       </section>
 
-      <div className="gutter mt-8 flex flex-col items-center md:items-start">
-        <div className="flex flex-wrap items-center justify-center gap-3 md:justify-start">
+      <div className="gutter mt-8 flex flex-col items-start">
+        <div className="flex flex-wrap items-center gap-3">
           {hasSource ? (
-            <LinkButton to={watchHref} variant="primary" size="lg" icon="play">
+            // `max-w-full` is what lets the label truncate: without it the
+            // button sizes to a nowrap episode name and runs off a 320px screen.
+            <LinkButton to={watchHref} variant="primary" size="lg" icon="play" className="max-w-full">
               <span className="truncate">
                 {canResume && progress ? `Xem tiếp · ${progress.episodeName}` : 'Xem ngay'}
               </span>
@@ -401,7 +427,7 @@ export default function DetailPage() {
       {movie.categories.length > 0 || movie.countries.length > 0 || movie.year !== null ? (
         <nav
           aria-label="Thể loại và quốc gia"
-          className="gutter mt-8 flex flex-wrap justify-center gap-2 md:justify-start"
+          className="gutter mt-8 flex flex-wrap gap-2"
         >
           {movie.categories.map((category) => (
             <ChipLink
@@ -473,7 +499,7 @@ export default function DetailPage() {
                   onClick={() => setExpanded((value) => !value)}
                   aria-expanded={isExpanded}
                   aria-controls="mo-ta-phim"
-                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-accent transition-colors duration-200 hover:text-accent-soft"
+                  className="mt-1 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-accent transition-colors duration-200 hover:text-accent-soft"
                 >
                   {isExpanded ? 'Thu gọn' : 'Xem thêm'}
                   <Icon

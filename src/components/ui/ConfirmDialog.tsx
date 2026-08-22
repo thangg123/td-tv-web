@@ -104,7 +104,11 @@ export default function ConfirmDialog({
 
   return (
     // z-[55] clears the sticky header (z-50) and stays under the nav drawer (z-60).
-    <div className="fixed inset-0 z-[55] flex items-center justify-center p-4">
+    // The insets are `max(gutter, safe-area)` so the card clears a notch or a
+    // home indicator without leaving a fat margin on a phone that has neither.
+    <div
+      className="fixed inset-0 z-[55] flex items-center justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
+    >
       <div
         className="absolute inset-0 bg-ink-deep/80 backdrop-blur-sm"
         onClick={onDismiss}
@@ -118,7 +122,9 @@ export default function ConfirmDialog({
         aria-labelledby={titleId}
         aria-describedby={message ? messageId : undefined}
         onKeyDown={confineTab}
-        className="relative w-full max-w-[26rem] animate-fade-up rounded-card border border-outline bg-surface-1 p-6 shadow-lift"
+        // A long message must scroll inside the card, never push the buttons
+        // off a 667px screen.
+        className="relative max-h-full w-full max-w-[26rem] animate-fade-up overflow-y-auto overscroll-contain rounded-card border border-outline bg-surface-1 p-5 shadow-lift sm:p-6"
       >
         <h2 id={titleId} className="text-section font-semibold text-text-high">
           {title}

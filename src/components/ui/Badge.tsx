@@ -12,9 +12,14 @@ const cx = (...parts: (string | false | null | undefined)[]): string =>
  * must not be mistaken for the tappable chips used by the filter bar. The
  * blurred plate keeps them legible over an arbitrary frame of poster art.
  */
+/*
+ * 12px is the floor for anything a phone has to read; the old 10px survived
+ * only because it was never looked at on a handset. Tracking comes back a notch
+ * to pay for the extra width so a three-badge row still fits a rail card.
+ */
 const BASE =
-  'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase ' +
-  'leading-4 tracking-widest backdrop-blur-md ring-1';
+  'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold uppercase ' +
+  'leading-4 tracking-wider backdrop-blur-md ring-1';
 
 const TONES: Record<BadgeTone, string> = {
   neutral: 'bg-ink/70 text-text-high ring-outline/70',
@@ -46,7 +51,7 @@ export function RatingBadge({
 }) {
   return (
     <Badge tone="gold" className={className}>
-      <Icon name="star" size={11} />
+      <Icon name="star" size={12} />
       <span className="tabular-nums">{formatRating(rating)}</span>
       {votes != null && votes > 0 ? (
         <span className="font-normal normal-case tracking-normal text-text-low">

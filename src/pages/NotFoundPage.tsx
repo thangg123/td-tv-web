@@ -11,15 +11,18 @@ import { routes } from '@/lib/routes';
 export default function NotFoundPage() {
   return (
     <section className="grain relative isolate flex min-h-[70vh] items-center overflow-hidden">
-      {/* Ghosted numeral: decoration, so it stays out of the accessibility tree. */}
+      {/* Ghosted numeral: decoration, so it stays out of the accessibility tree.
+          The floor is 7rem, not 9rem — at 320 the glyphs run wider than the
+          viewport and the section's `overflow-hidden` was eating most of the
+          middle digit, which reads as a rendering fault rather than as texture. */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 right-0 -z-10 -translate-y-1/2 translate-x-[10%] text-[clamp(9rem,32vw,20rem)] leading-none font-black tracking-[-0.07em] text-surface-2 select-none"
+        className="pointer-events-none absolute top-1/2 right-0 -z-10 -translate-y-1/2 translate-x-[10%] text-[clamp(7rem,32vw,20rem)] leading-none font-black tracking-[-0.07em] text-surface-2 select-none"
       >
         404
       </span>
 
-      <div className="gutter relative w-full py-24 sm:py-28">
+      <div className="gutter relative w-full py-16 sm:py-28">
         <p className="eyebrow">Lỗi 404</p>
 
         <h1 className="mt-4 max-w-3xl text-display font-black text-text-high">

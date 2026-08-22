@@ -248,11 +248,17 @@ function CatalogView({ source, filters, onFiltersChange }: CatalogViewProps) {
         />
       )}
 
-      {/* scroll-mt clears the header plus the sticky filter toolbar. */}
+      {/*
+        scroll-mt clears the header plus the sticky filter toolbar, and the bar
+        is not one height: it wraps to three 44px rows below 392px (161px), then
+        settles at ~110px. 64px header + 161px = 225 below the step, 64 + 110 =
+        174 above it, 72 + 110 = 182 once the header grows at lg. The step reuses
+        the shell's `min-[24.5rem]` hand-off rather than inventing a breakpoint.
+      */}
       <section
         ref={resultsRef}
         aria-label="Kết quả"
-        className="gutter scroll-mt-32 pt-7"
+        className="gutter scroll-mt-56 pt-7 min-[24.5rem]:scroll-mt-44 lg:scroll-mt-[11.5rem]"
       >
         {isPending ? (
           <GridSkeleton count={18} />
@@ -270,10 +276,10 @@ function CatalogView({ source, filters, onFiltersChange }: CatalogViewProps) {
               activeCount > 0 ? (
                 // The primary belongs to the way forward, not to the reset.
                 <div className="flex flex-wrap items-center justify-center gap-3">
-                  <LinkButton to={routes.home} variant="primary" icon="arrow-left">
+                  <LinkButton to={routes.home} variant="primary" size="lg" icon="arrow-left">
                     Về trang chủ
                   </LinkButton>
-                  <Button variant="secondary" icon="close" onClick={clearFilters}>
+                  <Button variant="secondary" size="lg" icon="close" onClick={clearFilters}>
                     Xóa lọc ({activeCount})
                   </Button>
                 </div>
