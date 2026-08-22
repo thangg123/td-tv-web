@@ -11,7 +11,19 @@ interface HeroSpotlightProps {
 }
 
 const SLIDE_COUNT = 5;
-const ROTATE_MS = 9000;
+const ROTATE_MS = 7000;
+
+/**
+ * The same personal photo the Android app uses (`drawable-nodpi/home_backdrop`),
+ * where it is the backdrop until the viewer actually lands on a title.
+ *
+ * Here it is the permanent base layer under the stills: it is a local file, so
+ * it paints on the very first frame with no CDN round-trip, and the movie art
+ * cross-fades in over it. That makes it what the page opens on — and it also
+ * covers the gap whenever a still is slow, missing or broken upstream, which
+ * otherwise flashes a flat grey box behind the title.
+ */
+const BASE_BACKDROP = '/home-backdrop.jpg';
 
 /** One box for the hero and for its skeleton, so nothing shifts as art arrives. */
 const HERO_BOX = 'relative isolate h-[62vh] min-h-[420px] max-h-[760px] w-full overflow-visible';
@@ -80,7 +92,14 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
     return (
       <div className={HERO_BOX} aria-hidden="true">
         <div className={ART_BOX}>
-          <div className="absolute inset-0 bg-surface-1" />
+          <img
+            src={BASE_BACKDROP}
+            alt=""
+            className="absolute inset-0 size-full object-cover object-[center_28%]"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
           <div className="absolute inset-0 scrim-bottom" />
         </div>
         <div className="gutter relative flex h-full max-w-3xl flex-col justify-end gap-4 pb-10 sm:pb-14">
@@ -102,17 +121,33 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
   const hasOriginName = movie.originName.length > 0 && movie.originName !== movie.name;
 
   return (
-    <section
-      aria-label="Phim nổi bật"
-      className={HERO_BOX}
-      onPointerEnter={() => setPaused(true)}
-      onPointerLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
-    >
+    /*
+     * The pause handlers deliberately sit on the CONTENT block below, not here.
+     * This section is 62vh of full-bleed art at the top of the page, so the
+     * cursor is resting somewhere inside it on most loads — hovering the whole
+     * thing meant the rotation simply never started, which read as a broken
+     * slider. Pausing is only useful while the viewer is actually reading the
+     * title or reaching for a button, and that is what the inner block covers.
+     */
+    <section aria-label="Phim nổi bật" className={HERO_BOX}>
       <div className={ART_BOX} aria-hidden="true">
+        {/*
+          Base layer — see BASE_BACKDROP. It is also the FIRST slide's own art:
+          no still is drawn over position 0, so the page opens on the photo with
+          the featured title over it, exactly as the TV app opens before focus
+          lands on any card. It then stays underneath every later slide, which
+          is what keeps a slow or broken still from flashing a grey box.
+        */}
+        <img
+          src={BASE_BACKDROP}
+          alt=""
+          className="absolute inset-0 size-full object-cover object-[center_28%]"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+        />
         {slides.map((slide, position) =>
-          mounted.has(position) ? (
+          position > 0 && mounted.has(position) ? (
             <img
               key={slide.slug}
               src={landscapeOf(slide)}
@@ -120,8 +155,7 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
               className={`absolute inset-0 size-full object-cover object-[center_28%] transition-opacity duration-1000 ease-out-expo ${
                 position === safeIndex ? 'opacity-100' : 'opacity-0'
               }`}
-              loading={position === 0 ? 'eager' : 'lazy'}
-              fetchPriority={position === 0 ? 'high' : 'auto'}
+              loading="lazy"
               decoding="async"
             />
           ) : null,
@@ -132,8 +166,21 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
       </div>
 
       <div className="gutter relative flex h-full flex-col justify-end pb-10 sm:pb-14">
-        {/* Re-keying replays the entrance animation on every rotation. */}
-        <div key={movie.slug} className="max-w-2xl animate-fade-up">
+        {/*
+          The hover target is this box and nothing wider. It wraps the keyed
+          child rather than being it, so a rotation does not remount the element
+          the pointer is currently inside — which would fire a spurious
+          leave/enter pair and stutter the pause.
+        */}
+        <div
+          className="max-w-2xl"
+          onPointerEnter={() => setPaused(true)}
+          onPointerLeave={() => setPaused(false)}
+          onFocus={() => setPaused(true)}
+          onBlur={() => setPaused(false)}
+        >
+          {/* Re-keying replays the entrance animation on every rotation. */}
+          <div key={movie.slug} className="animate-fade-up">
           <p className="eyebrow">Phim mới cập nhật</p>
 
           <h1 className="clamp-2 mt-3 text-display font-black text-text-high">{movie.name}</h1>
@@ -161,6 +208,7 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
             <LinkButton to={routes.detail(movie.slug)} variant="secondary" size="lg" icon="info">
               Chi tiết
             </LinkButton>
+          </div>
           </div>
         </div>
 

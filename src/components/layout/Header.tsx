@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import type { FormEvent, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/Icon';
-import { MovieLists } from '@/lib/domain/catalog';
+import { MovieLists, languageOptions } from '@/lib/domain/catalog';
 import { routes } from '@/lib/routes';
 
 interface NavItem {
@@ -19,8 +19,13 @@ interface NavGroup {
 
 /**
  * The TV app's vertical rail, regrouped for a horizontal bar: content types in
- * one cluster, ways of slicing the catalogue in another. The grouping is what
- * keeps eight destinations from reading as one undifferentiated row.
+ * one cluster, audio tracks in the next, ways of slicing the catalogue in the
+ * last. The grouping is what keeps eleven destinations from reading as one
+ * undifferentiated row — the same job the rail's group gaps do on the TV.
+ *
+ * The language cuts come from `languageOptions` rather than being retyped, so
+ * the bar, the drawer, the home band and every filter dropdown always offer the
+ * same three.
  */
 const NAV_GROUPS: readonly NavGroup[] = [
   {
@@ -33,6 +38,13 @@ const NAV_GROUPS: readonly NavGroup[] = [
       { to: routes.list(MovieLists.TV_SHOWS), label: 'TV Shows' },
       { to: routes.list(MovieLists.CINEMA), label: 'Chiếu rạp' },
     ],
+  },
+  {
+    label: 'Ngôn ngữ',
+    items: languageOptions.map((option) => ({
+      to: routes.language(option.slug),
+      label: option.label,
+    })),
   },
   {
     label: 'Khám phá',
