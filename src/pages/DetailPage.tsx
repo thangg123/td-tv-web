@@ -272,20 +272,38 @@ export default function DetailPage() {
 
   return (
     <article className="pb-20">
-      <section
-        aria-hidden="true"
-        className="relative isolate h-[56vh] max-h-[620px] min-h-[320px] w-full"
-      >
+      {/*
+        The poster and title live INSIDE the backdrop band, bottom-aligned,
+        rather than in a sibling pulled up by a negative margin.
+        That margin was a fixed pixel count subtracted from a `vh` height, so
+        the overlap only looked right at one window height — on a short laptop
+        the poster tucked under the header, on a tall monitor it left a dead
+        strip of scrimmed art below it. Anchoring to the bottom of the band
+        makes the gap identical at every size, and `pt` is what guarantees the
+        content always clears the translucent header.
+      */}
+      <section className="relative isolate">
         {/* The art starts above the section so it runs under the translucent
             header; the bleed needs its own clipping box to do that. */}
-        <div className="grain absolute inset-x-0 -top-20 bottom-0 overflow-hidden bg-ink-deep">
+        <div
+          aria-hidden="true"
+          className="grain absolute inset-x-0 -top-20 bottom-0 overflow-hidden bg-ink-deep"
+        >
           <BackdropArt base={movie.thumbUrl || movie.posterUrl} enhanced={backdropUrl} />
-          <div className="scrim-left absolute inset-0" />
-          <div className="scrim-bottom absolute inset-0" />
+          <div className="hero-scrim absolute inset-0" />
         </div>
-      </section>
 
-      <div className="gutter relative z-10 -mt-28 flex flex-col items-center gap-6 md:-mt-36 md:flex-row md:items-end md:gap-8">
+        {/*
+          No `min-h`: the band is exactly as tall as its content plus `pt`, so
+          the padding IS the gap under the header and nothing else can open one.
+          A min-height would add slack above the block the moment the content
+          came in shorter than it, which is the empty strip this replaced.
+
+          `main` begins BELOW the sticky header — a sticky box still occupies
+          its space — so this padding is measured from there and is the whole
+          gap, not a gap minus the header. That is why it is 48px and not 96.
+        */}
+        <div className="gutter relative z-10 flex flex-col items-center justify-end gap-6 pt-8 pb-6 md:flex-row md:items-end md:gap-8 md:pt-12 md:pb-8">
         <SmartImage
           src={movie.posterUrl || movie.thumbUrl}
           alt={movie.name}
@@ -330,8 +348,9 @@ export default function DetailPage() {
             const line = metaLine(movie.year, movie.time, total);
             return line ? <p className="mt-3 text-sm text-text-mid">{line}</p> : null;
           })()}
+          </div>
         </div>
-      </div>
+      </section>
 
       <div className="gutter mt-8 flex flex-col items-center md:items-start">
         <div className="flex flex-wrap items-center justify-center gap-3 md:justify-start">

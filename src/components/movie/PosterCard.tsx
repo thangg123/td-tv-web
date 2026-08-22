@@ -3,7 +3,6 @@ import type { MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { MetaBadges, RatingBadge } from '@/components/ui/Badge';
 import { IconButton } from '@/components/ui/Button';
-import Icon from '@/components/ui/Icon';
 import SmartImage from '@/components/ui/SmartImage';
 import type { MovieCard } from '@/lib/domain/models';
 import { portraitOf } from '@/lib/domain/models';
@@ -70,13 +69,6 @@ function PosterCard({ movie, priority = false, className = '' }: PosterCardProps
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 scrim-bottom opacity-75 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100" />
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-start gap-1.5 p-2.5">
-            <span
-              className={`flex items-center gap-1 text-xs font-semibold tracking-wide text-accent transition duration-300 ease-out-expo ${REVEAL}`}
-            >
-              <Icon name="play" size={11} />
-              Xem ngay
-            </span>
-
             {meta.length > 0 && (
               <span
                 className={`text-xs leading-tight text-text-mid transition duration-300 ease-out-expo ${REVEAL}`}

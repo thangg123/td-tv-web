@@ -102,10 +102,20 @@ export default function EpisodePicker({
       )}
 
       <div className="flex min-h-0 flex-col">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="eyebrow">Tập</p>
-          <p className="text-xs text-text-mid tabular-nums">{formatCount(episodes.length)} tập</p>
-        </div>
+        {/*
+          Only the panel labels its own episode block. In the `page` variant the
+          picker is always embedded under a section heading that already says
+          "Danh sách tập" and carries the count, and printing both put the same
+          "5 tập" on screen twice, one line above the other.
+        */}
+        {isPanel && (
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="eyebrow">Tập</p>
+            <p className="text-xs text-text-mid tabular-nums">
+              {formatCount(episodes.length)} tập
+            </p>
+          </div>
+        )}
 
         <div
           ref={gridRef}

@@ -59,8 +59,8 @@ const NAV_GROUPS: readonly NavGroup[] = [
 const ICON_CONTROL =
   'inline-flex size-9 shrink-0 items-center justify-center rounded-pill border border-outline/70 bg-surface-2/60 text-text-mid transition-[color,background-color,border-color,transform] duration-200 ease-out-expo hover:-translate-y-px hover:border-accent/40 hover:bg-surface-3 hover:text-text-high active:translate-y-0';
 
-/** Tailwind's `lg`, mirrored so the drawer can dismiss itself on a rotation. */
-const DESKTOP_QUERY = '(min-width: 64rem)';
+/** Tailwind's `xl`, mirrored so the drawer can dismiss itself on a rotation. */
+const DESKTOP_QUERY = '(min-width: 80rem)';
 
 /** Past this many pixels the glass bar commits to a solid plate. */
 const OPAQUE_AFTER_PX = 24;
@@ -102,7 +102,15 @@ export function BrandMark() {
           </svg>
         </span>
       </span>
-      <span className="flex items-baseline gap-1.5">
+      {/*
+        Below `2xl` the wordmark is dropped and the portrait carries the brand
+        on its own. Eleven destinations plus a search field and the library link
+        do not fit beside it until 1536 — measured, not guessed: at 1280 the nav
+        overflowed its box by 45px and "Quốc gia" ran under the search button.
+        The mark is recognisable without the text; the text is not recognisable
+        without the mark.
+      */}
+      <span className="hidden items-baseline gap-1.5 2xl:flex">
         <span className="text-xl font-black tracking-[-0.045em] text-text-high">CiCi</span>
         <span className="text-eyebrow font-semibold uppercase text-text-low">TV</span>
       </span>
@@ -115,7 +123,7 @@ function DesktopNavItem({ to, label, end }: NavItem) {
     <NavLink
       to={to}
       end={end}
-      className="group relative flex h-full shrink-0 items-center whitespace-nowrap px-2 text-sm font-medium xl:px-2.5"
+      className="group relative flex h-full shrink-0 items-center whitespace-nowrap px-1.5 text-sm font-medium xl:px-2.5"
     >
       {({ isActive }) => (
         <>
@@ -175,7 +183,7 @@ export default function Header() {
     };
     const desktop = window.matchMedia(DESKTOP_QUERY);
     const onBreakpoint = (event: MediaQueryListEvent) => {
-      // The panel is `lg:hidden`; without this it would vanish on rotation and
+      // The panel is `xl:hidden`; without this it would vanish on rotation and
       // leave the body scroll locked behind it.
       if (event.matches) setMenuOpen(false);
     };
@@ -260,7 +268,7 @@ export default function Header() {
 
           <nav
             aria-label="Điều hướng chính"
-            className="hidden self-stretch lg:ml-2 lg:flex lg:items-center xl:ml-4"
+            className="hidden min-w-0 shrink self-stretch xl:ml-4 xl:flex xl:items-center"
           >
             {NAV_GROUPS.map((group, index) => (
               <Fragment key={group.label}>
@@ -275,7 +283,7 @@ export default function Header() {
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <div className="relative hidden items-center lg:flex">
+            <div className="relative hidden items-center xl:flex">
               <button
                 ref={searchToggleRef}
                 type="button"
@@ -323,7 +331,7 @@ export default function Header() {
               )}
             </div>
 
-            <Link to={routes.search()} aria-label="Tìm kiếm" className={`${ICON_CONTROL} lg:hidden`}>
+            <Link to={routes.search()} aria-label="Tìm kiếm" className={`${ICON_CONTROL} xl:hidden`}>
               <Icon name="search" size={18} />
             </Link>
 
@@ -340,7 +348,7 @@ export default function Header() {
             >
               <Icon name="bookmark" size={16} />
               {/* Eight nav items and a label do not both fit at exactly 1024px. */}
-              <span className="lg:hidden xl:inline">Thư viện</span>
+              <span className="xl:hidden xl:inline">Thư viện</span>
             </NavLink>
 
             <button
@@ -350,7 +358,7 @@ export default function Header() {
               aria-expanded={menuOpen}
               aria-controls="menu-dieu-huong"
               onClick={() => setMenuOpen((open) => !open)}
-              className={`${ICON_CONTROL} lg:hidden`}
+              className={`${ICON_CONTROL} xl:hidden`}
             >
               <Icon name={menuOpen ? 'close' : 'menu'} size={20} />
             </button>
@@ -364,7 +372,7 @@ export default function Header() {
         be pinned to the 4rem-tall bar instead of the viewport.
       */}
       {menuOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden">
+        <div className="fixed inset-0 z-[60] xl:hidden">
           <button
             type="button"
             aria-label="Đóng menu"

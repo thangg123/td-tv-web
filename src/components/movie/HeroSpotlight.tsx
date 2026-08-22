@@ -128,8 +128,7 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
             />
           ) : null,
         )}
-        <div className="absolute inset-0 scrim-bottom" />
-        <div className="absolute inset-0 scrim-left" />
+        <div className="hero-scrim absolute inset-0" />
         <div className="grain absolute inset-0" />
       </div>
 
@@ -149,12 +148,16 @@ export default function HeroSpotlight({ items, isLoading = false }: HeroSpotligh
         >
           {/* Re-keying replays the entrance animation on every rotation. */}
           <div key={movie.slug} className="animate-fade-up">
-          <p className="eyebrow">Phim mới cập nhật</p>
+          <p className="eyebrow on-art">Phim mới cập nhật</p>
 
-          <h1 className="clamp-2 mt-3 text-display font-black text-text-high">{movie.name}</h1>
+          <h1 className="clamp-2 on-art mt-3 text-display font-black text-text-high">
+            {movie.name}
+          </h1>
 
           {hasOriginName && (
-            <p className="mt-2 truncate text-base text-text-mid sm:text-lg">{movie.originName}</p>
+            <p className="on-art mt-2 truncate text-base text-text-mid sm:text-lg">
+              {movie.originName}
+            </p>
           )}
 
           <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">

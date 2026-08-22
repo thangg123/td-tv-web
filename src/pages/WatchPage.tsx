@@ -22,6 +22,7 @@ import EpisodePicker from '@/components/player/EpisodePicker';
 import VideoPlayer from '@/components/player/VideoPlayer';
 import { MetaBadges, RatingBadge } from '@/components/ui/Badge';
 import Button, { LinkButton } from '@/components/ui/Button';
+import { ChipLink } from '@/components/ui/Chip';
 import Icon from '@/components/ui/Icon';
 import Skeleton from '@/components/ui/Skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/StateViews';
@@ -32,16 +33,6 @@ import { routes } from '@/lib/routes';
 import { MIN_SAVE_POSITION_MS, getProgressFor, saveProgress } from '@/lib/storage/userData';
 
 const CHROME_IDLE_MS = 3_000;
-
-const PANEL_ID = 'danh-sach-tap';
-
-/** Matches the `lg:` breakpoint the episode panel is pinned open at. */
-const DESKTOP_QUERY = '(min-width: 64rem)';
-
-/** Two columns once there is room for the episode list beside the picture. */
-const SPLIT_LAYOUT =
-  'flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-x-6 ' +
-  'xl:grid-cols-[minmax(0,1fr)_23rem]';
 
 /** Chrome sits on moving picture, so it borrows the player's own language. */
 const CHROME_BUTTON =
@@ -91,7 +82,6 @@ export default function WatchPage() {
   const [seed, setSeed] = useState<ResumeSeed | null>(() => readSeed(slug));
   const [fatal, setFatal] = useState<string | null>(null);
   const [useEmbed, setUseEmbed] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
 
   /*
    * Back/forward between two watch URLs re-renders this component rather than
@@ -117,7 +107,6 @@ export default function WatchPage() {
   const episode = episodes[episodeIndex];
 
   const chrome = useIdleChrome();
-  const isDesktop = useIsDesktop();
 
   const stillImage = useMemo(() => (movie ? landscapeOf(detailToCard(movie)) : ''), [movie]);
 
@@ -201,12 +190,10 @@ export default function WatchPage() {
     if (episodeIndex + 1 < episodes.length) selectEpisode(episodeIndex + 1);
   }, [episodeIndex, episodes.length, selectEpisode]);
 
-  const handleFatal = useCallback((message: string) => {
-    setFatal(message);
-    // Whatever the fix is — another server, another episode — it lives in the
-    // picker, which is collapsed on small screens.
-    setSheetOpen(true);
-  }, []);
+  // The picker used to be collapsed on small screens and had to be opened here,
+  // since whatever the fix is — another server, another episode — lives in it.
+  // It sits in the page flow now, so it is already there to scroll to.
+  const handleFatal = useCallback((message: string) => setFatal(message), []);
 
   const handleRetry = useCallback(() => {
     setFatal(null);
@@ -228,7 +215,6 @@ export default function WatchPage() {
     setUseEmbed(true);
   }, []);
 
-  const toggleSheet = useCallback(() => setSheetOpen((open) => !open), []);
 
   /* ── states ────────────────────────────────────────────────────────────── */
 
@@ -368,9 +354,9 @@ export default function WatchPage() {
 
   return (
     <WatchShell>
-      <div className={showPicker ? SPLIT_LAYOUT : 'flex flex-col'}>
+      <div className="flex flex-col">
         <div
-          className="relative isolate bg-black lg:col-start-1 lg:row-start-1 lg:overflow-hidden lg:rounded-card lg:shadow-lift lg:ring-1 lg:ring-outline/60"
+          className="relative isolate bg-black lg:overflow-hidden lg:rounded-card lg:shadow-lift lg:ring-1 lg:ring-outline/60"
           onPointerMove={chrome.reveal}
           onPointerDown={chrome.reveal}
           onPointerLeave={chrome.hold}
@@ -406,67 +392,11 @@ export default function WatchPage() {
                 )}
               </div>
 
-              {showPicker && (
-                <button
-                  type="button"
-                  onClick={toggleSheet}
-                  aria-expanded={sheetOpen}
-                  aria-controls={PANEL_ID}
-                  className={`${CHROME_BUTTON} gap-1.5 px-3 text-xs font-medium lg:hidden`}
-                >
-                  <Icon name="menu" size={16} />
-                  <span className="hidden sm:inline">Danh sách tập</span>
-                </button>
-              )}
             </div>
           </div>
         </div>
 
-        {showPicker && (
-          <aside className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto">
-            <div className="mt-4 border-y border-outline/60 bg-surface-1/60 lg:mt-0 lg:rounded-card lg:border lg:bg-surface-1/70">
-              <button
-                type="button"
-                onClick={toggleSheet}
-                aria-expanded={sheetOpen}
-                aria-controls={PANEL_ID}
-                className="flex w-full items-center justify-between gap-3 px-gutter py-4 text-left transition-colors hover:text-text-high lg:hidden"
-              >
-                <span className="text-section font-semibold text-text-high">
-                  Danh sách tập
-                  <span className="ml-2 text-sm font-normal text-text-mid tabular-nums">
-                    {formatCount(episodes.length)}
-                  </span>
-                </span>
-                <Icon
-                  name="chevron-down"
-                  className={`shrink-0 text-text-mid transition-transform duration-200 ease-out-expo ${
-                    sheetOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              <div
-                id={PANEL_ID}
-                className={`px-gutter pb-5 lg:block lg:px-4 lg:pb-4 lg:pt-4 ${
-                  sheetOpen ? 'block' : 'hidden'
-                }`}
-              >
-                <EpisodePicker
-                  servers={servers}
-                  serverIndex={serverIndex}
-                  episodeIndex={episodeIndex}
-                  onSelectServer={selectServer}
-                  onSelectEpisode={selectEpisode}
-                  variant="panel"
-                  active={sheetOpen || isDesktop}
-                />
-              </div>
-            </div>
-          </aside>
-        )}
-
-        <section className="mt-6 px-gutter pb-20 lg:col-start-1 lg:row-start-2 lg:mt-7 lg:px-0">
+        <section className="mt-6 px-gutter pb-20 lg:mt-7 lg:px-0">
           <p className="eyebrow">Đang xem</p>
           <h1 className="mt-2.5 text-screen font-black text-text-high">{movie.name}</h1>
           {movie.originName && movie.originName !== movie.name && (
@@ -488,42 +418,121 @@ export default function WatchPage() {
 
           {factLine.length > 0 && <p className="mt-3.5 text-sm text-text-mid">{factLine}</p>}
 
-          <div className="mt-6 flex flex-wrap items-center gap-2.5">
-            <LinkButton to={routes.detail(movie.slug)} variant="secondary" icon="info">
-              Chi tiết phim
-            </LinkButton>
-            {useEmbed && hasStream && (
+          {showPicker && (
+            <div className="mt-7 rounded-card border border-outline/60 bg-surface-1/60 p-4 sm:p-5">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-section font-semibold text-text-high">Danh sách tập</h2>
+                <span className="text-sm text-text-mid tabular-nums">
+                  {formatCount(episodes.length)} tập
+                </span>
+              </div>
+              <div className="mt-4">
+                {/*
+                  Always mounted and always visible now that it lives in the page
+                  flow, so the picker never has to be told whether it is on
+                  screen — its scroll-to-current can just run.
+                */}
+                <EpisodePicker
+                  servers={servers}
+                  serverIndex={serverIndex}
+                  episodeIndex={episodeIndex}
+                  onSelectServer={selectServer}
+                  onSelectEpisode={selectEpisode}
+                  variant="page"
+                />
+              </div>
+            </div>
+          )}
+
+          {movie.categories.length > 0 && (
+            <div className="mt-5">
+              <p className="eyebrow eyebrow-muted">Thể loại</p>
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                {movie.categories.map((category) => (
+                  <ChipLink
+                    key={category.slug}
+                    label={category.name}
+                    to={routes.category(category.slug)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {movie.description.length > 0 && (
+            <div className="mt-6">
+              <p className="eyebrow eyebrow-muted">Nội dung phim</p>
+              <Synopsis text={movie.description} />
+            </div>
+          )}
+
+          {useEmbed && hasStream && (
+            <div className="mt-6">
               <Button variant="ghost" icon="refresh" onClick={backToMain}>
                 Dùng trình phát chính
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </section>
       </div>
     </WatchShell>
   );
 }
 
-/* ── chrome ──────────────────────────────────────────────────────────────── */
-
 /**
- * The episode panel is collapsed below `lg` and pinned open above it, so
- * whether it is on screen is half CSS and half state. The picker needs the
- * answer in JS to know when it may measure itself.
+ * The synopsis under the player, clamped.
+ *
+ * Measured rather than guessed: the toggle only appears when the text really
+ * is taller than its clamp, so a two-line summary does not get a "Xem thêm"
+ * that expands nothing. Re-measured on resize because the column is fluid and
+ * a wider window can pull four lines back into three.
  */
-function useIsDesktop(): boolean {
-  const [isDesktop, setIsDesktop] = useState(() => window.matchMedia(DESKTOP_QUERY).matches);
+function Synopsis({ text }: { text: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
 
   useEffect(() => {
-    const media = window.matchMedia(DESKTOP_QUERY);
-    const onChange = () => setIsDesktop(media.matches);
-    onChange();
-    media.addEventListener('change', onChange);
-    return () => media.removeEventListener('change', onChange);
-  }, []);
+    const node = ref.current;
+    if (!node) return;
+    const measure = () => setOverflows(node.scrollHeight > node.clientHeight + 1);
+    // Only meaningful while clamped; expanded, scrollHeight equals clientHeight.
+    if (!expanded) measure();
+    const observer = new ResizeObserver(() => {
+      if (!expanded) measure();
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [text, expanded]);
 
-  return isDesktop;
+  return (
+    <>
+      <p
+        ref={ref}
+        className={`mt-2 max-w-3xl text-sm leading-relaxed text-text-mid ${expanded ? '' : 'clamp-3'}`}
+      >
+        {text}
+      </p>
+      {(overflows || expanded) && (
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          className="mt-2 inline-flex items-center gap-1 rounded-pill text-sm font-medium text-accent transition-colors duration-200 hover:text-accent-soft"
+        >
+          {expanded ? 'Thu gọn' : 'Xem thêm'}
+          <Icon
+            name="chevron-down"
+            size={14}
+            className={`transition-transform duration-200 ease-out-expo ${expanded ? 'rotate-180' : ''}`}
+          />
+        </button>
+      )}
+    </>
+  );
 }
+
+/* ── chrome ──────────────────────────────────────────────────────────────── */
+
 
 /**
  * Visibility for the bar over the picture, matched to the player's own controls:

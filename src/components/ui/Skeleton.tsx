@@ -48,9 +48,11 @@ export function GridSkeleton({ count = 12 }: { count?: number }) {
 export function DetailSkeleton() {
   return (
     <div className="pb-16" aria-hidden="true">
-      <Skeleton className="h-[56vh] max-h-[620px] min-h-[320px] w-full rounded-none" />
+      {/* Mirrors DetailPage: the block sits INSIDE the band, bottom-aligned. */}
+      <div className="relative">
+        <Skeleton className="absolute inset-0 rounded-none" />
 
-      <div className="gutter relative -mt-28 flex flex-col gap-6 md:-mt-36 md:flex-row md:items-end">
+        <div className="gutter relative flex flex-col justify-end gap-6 pt-8 pb-6 md:flex-row md:items-end md:pt-12 md:pb-8">
         <Skeleton className="aspect-[2/3] w-44 flex-none md:w-56" />
         <div className="flex-1 space-y-3 pb-2">
           <Skeleton className="h-3 w-24 rounded-md" />
@@ -59,6 +61,7 @@ export function DetailSkeleton() {
           <div className="flex gap-2 pt-2">
             <Skeleton className="h-10 w-32 rounded-pill" />
             <Skeleton className="h-10 w-28 rounded-pill" />
+            </div>
           </div>
         </div>
       </div>
