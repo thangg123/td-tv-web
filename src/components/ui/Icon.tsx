@@ -36,7 +36,8 @@ export type IconName =
   | 'refresh'
   | 'skip-back'
   | 'skip-forward'
-  | 'external';
+  | 'external'
+  | 'download';
 
 export interface IconProps {
   name: IconName;
@@ -94,6 +95,10 @@ const GLYPHS: Record<IconName, string> = {
   'skip-forward': 'M12.5 6.5 20.5 12l-8 5.5V6.5ZM3.5 6.5 11.5 12l-8 5.5V6.5Z',
   external:
     'M14.25 4.75h5v5m0-5-7.75 7.75M18 13.75v4.5a1.75 1.75 0 0 1-1.75 1.75H5.75A1.75 1.75 0 0 1 4 18.25V7.75A1.75 1.75 0 0 1 5.75 6h4.5',
+  /* Shaft, head and tray — the tray sits on the same 4.25/19.75 margins as
+     `expand`, so the glyph optically centres against the rest of the set. */
+  download:
+    'M12 3.75v10.5m-4.25-4.25 4.25 4.25 4.25-4.25M4.25 15.25v3.25A1.75 1.75 0 0 0 6 20.25h12a1.75 1.75 0 0 0 1.75-1.75v-3.25',
 };
 
 const SOLID_ICONS: ReadonlySet<IconName> = new Set<IconName>([

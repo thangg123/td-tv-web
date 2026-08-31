@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import DownloadButton from '@/components/player/DownloadButton';
 import EmbedPlayer from '@/components/player/EmbedPlayer';
 import EpisodePicker from '@/components/player/EpisodePicker';
 import VideoPlayer from '@/components/player/VideoPlayer';
@@ -289,6 +290,9 @@ export default function WatchPage() {
       ? seed.positionMs
       : 0;
 
+  /* Nối byte segment MPEG-TS ra file MPEG-TS, nên đuôi phải là .ts chứ không .mp4. */
+  const downloadName = `${movie.slug}${episode.slug ? `-${episode.slug}` : ''}.ts`;
+
   const caption = metaLine(servers.length > 1 ? serverName : null, episode.name);
   const factLine = metaLine(
     episodes.length > 1 ? episode.name : null,
@@ -425,6 +429,12 @@ export default function WatchPage() {
           )}
 
           {factLine.length > 0 && <p className="mt-3.5 text-sm text-text-mid">{factLine}</p>}
+
+          {hasStream && (
+            <div className="mt-5">
+              <DownloadButton url={episode.m3u8} fileName={downloadName} />
+            </div>
+          )}
 
           {showPicker && (
             <div className="mt-7 w-fit min-w-[min(100%,20rem)] max-w-full rounded-card border border-outline/60 bg-surface-1/60 p-4 sm:p-5">
