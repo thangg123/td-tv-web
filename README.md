@@ -81,6 +81,30 @@ Yêu thích và tiến độ xem lưu trong `localStorage` (`cici.favorites`, `c
 đồng bộ giữa các tab qua sự kiện `storage`. Không có tài khoản, không có backend — xoá dữ liệu
 trình duyệt là mất.
 
+## Tải phim về máy
+
+`scripts/tai-phim.sh` tải một tập (hoặc cả bộ) từ cùng nguồn phimapi mà trang này đang phát.
+
+```bash
+./scripts/tai-phim.sh co-dau-cua-quy               # liệt kê server + danh sách tập
+./scripts/tai-phim.sh co-dau-cua-quy --tap 3       # tải tập 3
+./scripts/tai-phim.sh co-dau-cua-quy --tap all     # cả bộ
+./scripts/tai-phim.sh "…/xem/co-dau-cua-quy?tap=tap-03" --tap 3 --out ~/Phim
+```
+
+Nhận cả slug trần lẫn URL `/phim/:slug` hoặc `/xem/:slug?sv=&tap=` copy thẳng từ thanh địa chỉ.
+Bỏ qua tập đã tải xong nên đứt mạng thì chạy lại là tiếp tục.
+
+Cần `curl`, `jq`, `ffmpeg`. Có thêm `yt-dlp` thì script tự dùng nó và nhanh hơn ~1.3 lần —
+CDN bóp băng thông theo từng kết nối, `yt-dlp -N 16` tải 16 segment song song nên chạm trần
+đường mạng, còn `ffmpeg` tải tuần tự. Đo trên một tập 24 phút (275 MB): yt-dlp 31.2s,
+ffmpeg 39.7s.
+
+**Không có đánh đổi chất lượng.** Cả hai đường đều `-c copy`, remux chứ không encode lại.
+Hai file xuất ra là bit-identical: cùng video/audio MD5, cùng 36757 frame, cùng 288,626,318 byte.
+Nguồn cũng không có mức chất lượng nào để chọn — kiểm 12 phim thì master playlist nào cũng
+đúng một variant, luôn ngang 1920px. "Chất lượng cao nhất" ở đây chỉ có nghĩa là *đừng encode lại*.
+
 ## Ghi chú khi sửa tiếp
 
 - **Đừng hardcode màu.** Mọi màu/kích thước/bo góc đều là token trong `src/styles/theme.css`.
